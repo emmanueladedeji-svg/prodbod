@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { ProdbodProduct, useDuplicateProduct, useDeleteProduct, useProductFeatureCount } from '@/hooks/useProdbodProducts';
@@ -158,8 +159,8 @@ export function ProductContextMenu({
         </div>
       </div>
 
-      {/* Delete confirmation modal */}
-      {showDeleteConfirm && (
+      {/* Delete confirmation modal — portaled to body so sidebar transform doesn't clip it */}
+      {showDeleteConfirm && createPortal(
         <div
           style={{
             position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 200,
@@ -210,7 +211,8 @@ export function ProductContextMenu({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

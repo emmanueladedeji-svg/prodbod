@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Loader2, X } from 'lucide-react';
 import { useOrgProducts, useUpdateProductSettings, ProdbodProduct } from '@/hooks/useProdbodProducts';
 import { useOrgMembersProdbod } from '@/hooks/useProdbodMembers';
@@ -92,7 +93,7 @@ export function ProductSpaceSettingsModal({ productId, orgId, onClose }: Product
 
   const activeMembers = members.filter((m: any) => m.status === 'Active' || m.status === 'active');
 
-  return (
+  return createPortal(
     <div
       style={{
         position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200,
@@ -323,6 +324,7 @@ export function ProductSpaceSettingsModal({ productId, orgId, onClose }: Product
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

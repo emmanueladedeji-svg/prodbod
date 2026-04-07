@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   DndContext, DragEndEvent, DragOverEvent, PointerSensor,
   useSensor, useSensors, DragOverlay, closestCenter,
@@ -207,7 +208,7 @@ export function StatusSettingsModal({ productId, orgId, onClose }: StatusSetting
 
   const previewStatuses = localStatuses.filter(s => !s.isDeleted);
 
-  return (
+  return createPortal(
     <>
       <div
         style={{
@@ -406,6 +407,7 @@ export function StatusSettingsModal({ productId, orgId, onClose }: StatusSetting
           onSaved={() => {}}
         />
       )}
-    </>
+    </>,
+    document.body
   );
 }
