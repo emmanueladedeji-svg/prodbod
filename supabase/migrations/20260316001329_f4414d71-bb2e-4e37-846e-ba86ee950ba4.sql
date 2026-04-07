@@ -1,0 +1,1 @@
+ALTER TABLE public.features ADD COLUMN IF NOT EXISTS start_date timestamp with time zone DEFAULT NULL;

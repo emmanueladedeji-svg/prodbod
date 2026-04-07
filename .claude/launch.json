@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Vite Dev Server",
+      "runtimeExecutable": "/usr/local/bin/node",
+      "runtimeArgs": ["/Users/emmanueladedeji/Desktop/Rest/.claude/worktrees/epic-banach/node_modules/.bin/vite", "--port", "8080", "--force"],
+      "port": 8080
+    },
+    {
+      "name": "Vite Preview (production build)",
+      "runtimeExecutable": "/usr/local/bin/node",
+      "runtimeArgs": ["/Users/emmanueladedeji/Desktop/Rest/node_modules/.bin/vite", "preview", "--port", "4173"],
+      "port": 4173
+    }
+  ]
+}

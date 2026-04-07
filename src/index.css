@@ -1,0 +1,226 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Primary: Blue #3B82F6 */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary: Purple #8B5CF6 */
+    --secondary: 258 90% 66%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    /* Accent: Purple-blue blend */
+    --accent: 238 84% 67%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 217 91% 60%;
+
+    --radius: 0.5rem;
+
+    /* Sidebar - light mode */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 91% 96%;
+    --sidebar-accent-foreground: 217 91% 40%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 217 91% 60%;
+
+    /* Chart colors */
+    --chart-1: 217 91% 60%;
+    --chart-2: 258 90% 66%;
+    --chart-3: 238 84% 67%;
+    --chart-4: 199 89% 48%;
+    --chart-5: 280 85% 65%;
+
+    /* Success/Warning/Info */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+  }
+
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Primary: Blue - brighter in dark mode */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary: Purple */
+    --secondary: 258 90% 66%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    /* Accent: Purple-blue blend */
+    --accent: 238 84% 67%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 217 91% 60%;
+
+    /* Sidebar - dark mode */
+    --sidebar-background: 222 47% 8%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 91% 15%;
+    --sidebar-accent-foreground: 217 91% 70%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-ring: 217 91% 60%;
+
+    /* Chart colors - same in dark mode for consistency */
+    --chart-1: 217 91% 60%;
+    --chart-2: 258 90% 66%;
+    --chart-3: 238 84% 67%;
+    --chart-4: 199 89% 48%;
+    --chart-5: 280 85% 65%;
+
+    /* Success/Warning/Info */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* ProdBod design tokens */
+:root {
+  --pb-bg: #fafaf8;
+  --pb-bg2: #ffffff;
+  --pb-bg3: #f4f4f1;
+  --pb-border: #e8e8e4;
+  --pb-border2: #d4d4ce;
+  --pb-text: #1a1a18;
+  --pb-text2: #5a5a55;
+  --pb-text3: #9a9a94;
+  --pb-accent: #1a1a18;
+  --pb-accent-alt: #3d6cff;
+  --pb-green: #16a34a;
+  --pb-green-bg: #f0fdf4;
+  --pb-green-border: #bbf7d0;
+  --pb-amber: #b45309;
+  --pb-amber-bg: #fffbeb;
+  --pb-amber-border: #fde68a;
+  --pb-red: #dc2626;
+  --pb-red-bg: #fef2f2;
+  --pb-red-border: #fecaca;
+  --pb-blue: #1d4ed8;
+  --pb-blue-bg: #eff6ff;
+  --pb-blue-border: #bfdbfe;
+  --pb-r: 8px;
+  --pb-rl: 12px;
+  --pb-rxl: 16px;
+}
+
+/* ProdBod scrollbar */
+.prodbod ::-webkit-scrollbar { width: 5px; height: 5px; }
+.prodbod ::-webkit-scrollbar-track { background: transparent; }
+.prodbod ::-webkit-scrollbar-thumb { background: var(--pb-border2); border-radius: 10px; }
+
+/* ─── Status change animations ─────────────────────────────────────────────── */
+@keyframes statusFlash {
+  0%   { background-color: transparent; }
+  20%  { background-color: var(--flash-color, rgba(139,92,246,.15)); }
+  100% { background-color: transparent; }
+}
+
+.status-changing {
+  animation: statusFlash 400ms ease-out forwards;
+}
+
+.status-collapsing {
+  overflow: hidden !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  opacity: 0 !important;
+  margin-bottom: 0 !important;
+  border-bottom: none !important;
+  transition: height 200ms ease-in, opacity 150ms ease-in, margin 200ms ease-in !important;
+  pointer-events: none;
+}
+
+@keyframes statusArrive {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.status-arriving {
+  animation: statusArrive 250ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  border-left: 3px solid var(--arriving-status-color, #8b5cf6) !important;
+  transition: border-left-color 800ms ease-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-4px); }
+  40%       { transform: translateX(4px); }
+  60%       { transform: translateX(-3px); }
+  80%       { transform: translateX(3px); }
+}
+
+.shake-anim {
+  animation: shake 300ms ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-changing,
+  .status-collapsing,
+  .status-arriving,
+  .shake-anim {
+    animation: none !important;
+    transition: none !important;
+  }
+}
