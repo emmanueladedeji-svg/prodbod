@@ -56,7 +56,7 @@ export default function ProductWorkspace() {
   if (listsLoading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-        <Loader2 className="h-6 w-6 animate-spin" style={{ color: 'var(--pb-accent-alt)' }} />
+        <Loader2 className="h-6 w-6 animate-spin" style={{ color: 'var(--pb-gold)' }} />
       </div>
     );
   }
@@ -71,7 +71,7 @@ export default function ProductWorkspace() {
     }
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-        <Loader2 className="h-6 w-6 animate-spin" style={{ color: 'var(--pb-accent-alt)' }} />
+        <Loader2 className="h-6 w-6 animate-spin" style={{ color: 'var(--pb-gold)' }} />
       </div>
     );
   }
@@ -90,7 +90,7 @@ export default function ProductWorkspace() {
       >
         {featuresLoading ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-            <Loader2 className="h-5 w-5 animate-spin" style={{ color: 'var(--pb-accent-alt)' }} />
+            <Loader2 className="h-5 w-5 animate-spin" style={{ color: 'var(--pb-gold)' }} />
           </div>
         ) : view === 'list' ? (
           <ListView
@@ -119,7 +119,7 @@ export default function ProductWorkspace() {
       {showInlineAdd && view === 'list' && (
         <div style={{
           position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40,
-          background: 'var(--pb-bg2)', borderTop: '2px solid var(--pb-accent-alt)',
+          background: 'var(--pb-bg2)', borderTop: '2px solid var(--pb-gold)',
           boxShadow: '0 -4px 16px rgba(0,0,0,0.08)',
         }}>
           <InlineAddRow

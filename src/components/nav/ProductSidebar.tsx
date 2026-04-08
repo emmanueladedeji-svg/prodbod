@@ -134,7 +134,7 @@ export function ProductSidebar({ isOpen, onClose, onAddProduct }: ProductSidebar
                     onClick={() => { setCurrentOrgId(org.id); setOrgDropOpen(false); }}
                     style={{
                       padding: '9px 12px', cursor: 'pointer', fontSize: 13,
-                      color: org.id === currentOrgId ? 'var(--pb-accent-alt)' : 'var(--pb-text)',
+                      color: 'var(--pb-text)',
                       fontWeight: org.id === currentOrgId ? 600 : 400,
                       transition: 'background .12s',
                     }}
@@ -148,7 +148,7 @@ export function ProductSidebar({ isOpen, onClose, onAddProduct }: ProductSidebar
                   onClick={() => { setOrgDropOpen(false); setNewOrgModalOpen(true); }}
                   style={{
                     padding: '9px 12px', cursor: 'pointer', fontSize: 13,
-                    color: 'var(--pb-accent-alt)',
+                    color: 'var(--pb-text)',
                     borderTop: '1px solid var(--pb-border)',
                     display: 'flex', alignItems: 'center', gap: 6,
                     transition: 'background .12s',

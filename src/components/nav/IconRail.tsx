@@ -57,9 +57,10 @@ export function IconRail({ sidebarOpen, onToggleSidebar }: IconRailProps) {
     justifyContent: 'center',
     cursor: 'pointer',
     border: 'none',
-    background: active ? 'var(--pb-bg3)' : 'transparent',
+    background: 'transparent',
     color: active ? 'var(--pb-text)' : 'var(--pb-text3)',
     transition: 'all .15s',
+    position: 'relative',
   });
 
   return (
@@ -87,7 +88,7 @@ export function IconRail({ sidebarOpen, onToggleSidebar }: IconRailProps) {
           width: 28,
           height: 28,
           borderRadius: 7,
-          background: '#1a1a18',
+          background: 'var(--pb-black)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -96,7 +97,7 @@ export function IconRail({ sidebarOpen, onToggleSidebar }: IconRailProps) {
           marginBottom: 6,
         }}
       >
-        <span style={{ color: '#fff', fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 10, letterSpacing: '-0.04em' }}>PB</span>
+        <span style={{ color: 'var(--pb-gold)', fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 10, letterSpacing: '-0.04em' }}>PB</span>
       </div>
 
       {/* Toggle sidebar */}
@@ -118,39 +119,48 @@ export function IconRail({ sidebarOpen, onToggleSidebar }: IconRailProps) {
 
       {/* Nav links */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flex: 1 }}>
-        <NavLink to="/" end title="Dashboard" style={{ textDecoration: 'none' }}>
+        <NavLink to="/" end title="Dashboard" style={{ textDecoration: 'none', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {({ isActive }) => (
-            <div
-              style={iconBtn(isActive)}
-              onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = 'var(--pb-bg3)'; e.currentTarget.style.color = 'var(--pb-text)'; } }}
-              onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--pb-text3)'; } }}
-            >
-              <Home size={15} />
-            </div>
+            <>
+              {isActive && <div style={{ position: 'absolute', left: -4, top: 4, bottom: 4, width: 3, borderRadius: '0 2px 2px 0', background: 'var(--pb-gold)' }} />}
+              <div
+                style={iconBtn(isActive)}
+                onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.color = 'var(--pb-text)'; } }}
+                onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.color = 'var(--pb-text3)'; } }}
+              >
+                <Home size={15} />
+              </div>
+            </>
           )}
         </NavLink>
 
-        <NavLink to="/people" title="People" style={{ textDecoration: 'none' }}>
+        <NavLink to="/people" title="People" style={{ textDecoration: 'none', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {({ isActive }) => (
-            <div
-              style={iconBtn(isActive)}
-              onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = 'var(--pb-bg3)'; e.currentTarget.style.color = 'var(--pb-text)'; } }}
-              onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--pb-text3)'; } }}
-            >
-              <Users size={15} />
-            </div>
+            <>
+              {isActive && <div style={{ position: 'absolute', left: -4, top: 4, bottom: 4, width: 3, borderRadius: '0 2px 2px 0', background: 'var(--pb-gold)' }} />}
+              <div
+                style={iconBtn(isActive)}
+                onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.color = 'var(--pb-text)'; } }}
+                onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.color = 'var(--pb-text3)'; } }}
+              >
+                <Users size={15} />
+              </div>
+            </>
           )}
         </NavLink>
 
-        <NavLink to="/products" title="Products" style={{ textDecoration: 'none' }}>
+        <NavLink to="/products" title="Products" style={{ textDecoration: 'none', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {({ isActive }) => (
-            <div
-              style={iconBtn(isActive)}
-              onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = 'var(--pb-bg3)'; e.currentTarget.style.color = 'var(--pb-text)'; } }}
-              onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--pb-text3)'; } }}
-            >
-              <Target size={15} />
-            </div>
+            <>
+              {isActive && <div style={{ position: 'absolute', left: -4, top: 4, bottom: 4, width: 3, borderRadius: '0 2px 2px 0', background: 'var(--pb-gold)' }} />}
+              <div
+                style={iconBtn(isActive)}
+                onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.color = 'var(--pb-text)'; } }}
+                onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.color = 'var(--pb-text3)'; } }}
+              >
+                <Target size={15} />
+              </div>
+            </>
           )}
         </NavLink>
       </div>

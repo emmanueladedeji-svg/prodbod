@@ -55,7 +55,7 @@ export default function AcceptInvite() {
   if (inviteLoading) {
     return (
       <div className="prodbod min-h-screen flex items-center justify-center" style={{ background: 'var(--pb-bg)' }}>
-        <Loader2 className="h-7 w-7 animate-spin" style={{ color: 'var(--pb-accent-alt)' }} />
+        <Loader2 className="h-7 w-7 animate-spin" style={{ color: 'var(--pb-gold)' }} />
       </div>
     );
   }
@@ -65,7 +65,7 @@ export default function AcceptInvite() {
       <div className="prodbod min-h-screen flex items-center justify-center px-6" style={{ background: 'var(--pb-bg)', fontFamily: "'DM Sans', sans-serif" }}>
         <div style={{ maxWidth: 420, width: '100%', background: 'var(--pb-bg2)', border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-rxl)', padding: '36px 32px', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
           <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 28 }}>
-            Prod<span style={{ color: 'var(--pb-accent-alt)' }}>Bod</span>
+            Prod<span style={{ color: 'var(--pb-gold)' }}>Bod</span>
           </div>
           <div style={{ padding: '11px 14px', borderRadius: 'var(--pb-r)', fontSize: 13, background: 'var(--pb-red-bg)', border: '1px solid var(--pb-red-border)', color: 'var(--pb-red)' }}>
             This invite link is invalid or has already been used.
@@ -115,7 +115,7 @@ export default function AcceptInvite() {
       <div style={{ maxWidth: 420, width: '100%', background: 'var(--pb-bg2)', border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-rxl)', padding: '36px 32px', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
         {/* Logo */}
         <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 28 }}>
-          Prod<span style={{ color: 'var(--pb-accent-alt)' }}>Bod</span>
+          Prod<span style={{ color: 'var(--pb-gold)' }}>Bod</span>
         </div>
 
         <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 6, color: 'var(--pb-text)' }}>
@@ -185,8 +185,8 @@ export default function AcceptInvite() {
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
               padding: '10px 18px', borderRadius: 'var(--pb-r)',
               fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 500,
-              cursor: 'pointer', border: '1px solid var(--pb-accent)',
-              background: 'var(--pb-accent)', color: '#fff',
+              cursor: 'pointer', border: 'none',
+              background: 'var(--pb-gold)', color: 'var(--pb-text)',
               width: '100%', transition: 'all .15s', marginTop: 4,
             }}
           >

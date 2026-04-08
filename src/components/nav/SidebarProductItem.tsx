@@ -95,7 +95,8 @@ export function SidebarProductItem({ product, orgId, onNavigate }: SidebarProduc
             padding: '6px 8px',
             borderRadius: 'var(--pb-r)',
             cursor: isRenaming ? 'default' : 'pointer',
-            background: isActive ? 'var(--pb-bg3)' : 'transparent',
+            background: isActive ? 'var(--pb-gold-bg)' : 'transparent',
+            borderLeft: isActive ? '3px solid var(--pb-gold)' : '3px solid transparent',
             color: isActive ? 'var(--pb-text)' : 'var(--pb-text2)',
             transition: 'all .12s',
             userSelect: 'none',
@@ -129,7 +130,7 @@ export function SidebarProductItem({ product, orgId, onNavigate }: SidebarProduc
               style={{
                 flex: 1, border: 'none', outline: 'none', background: 'transparent',
                 fontSize: 13, fontFamily: "'DM Sans', sans-serif",
-                color: 'var(--pb-text)', borderBottom: '1px solid var(--pb-accent-alt)',
+                color: 'var(--pb-text)', borderBottom: '1px solid var(--pb-gold)',
                 padding: '0 2px', lineHeight: 1.4,
               }}
             />

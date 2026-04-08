@@ -245,23 +245,24 @@ export function StatusSettingsModal({ productId, orgId, onClose }: StatusSetting
 
           {/* Body: two-panel */}
           <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-            {/* Left panel */}
+            {/* Left panel — black */}
             <div style={{
-              width: 250, flexShrink: 0, borderRight: '1px solid var(--pb-border)',
+              width: 250, flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.08)',
               padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 20,
+              background: 'var(--pb-black)',
             }}>
               {/* Template selector */}
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--pb-text2)', textTransform: 'uppercase', letterSpacing: '.05em', fontFamily: "'Syne', sans-serif", marginBottom: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '.08em', fontFamily: "'Syne', sans-serif", marginBottom: 8 }}>
                   Status template
                 </div>
                 <select
                   value={selectedTemplateId}
                   onChange={e => handleApplyTemplate(e.target.value)}
                   style={{
-                    width: '100%', padding: '9px 12px', border: '1px solid var(--pb-border)',
+                    width: '100%', padding: '9px 12px', border: '1px solid rgba(255,255,255,0.15)',
                     borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif",
-                    fontSize: 13.5, color: 'var(--pb-text)', background: 'var(--pb-bg)',
+                    fontSize: 13.5, color: '#fff', background: 'rgba(255,255,255,0.08)',
                     outline: 'none', cursor: 'pointer',
                   }}
                 >
@@ -270,20 +271,20 @@ export function StatusSettingsModal({ productId, orgId, onClose }: StatusSetting
                     <option key={t.id} value={t.id}>{t.name}</option>
                   ))}
                 </select>
-                <div style={{ fontSize: 11.5, color: 'var(--pb-text3)', marginTop: 6 }}>
+                <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.35)', marginTop: 6, lineHeight: 1.5 }}>
                   Selecting a template previews it. Changes apply only when you click "Apply changes".
                 </div>
               </div>
 
               {/* Progress icons ClickApp */}
               <div style={{
-                border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-rl)',
-                padding: '12px 14px',
+                border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--pb-rl)',
+                padding: '12px 14px', background: 'rgba(255,255,255,0.06)',
               }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--pb-accent-alt)', marginBottom: 4, fontFamily: "'Syne', sans-serif" }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--pb-gold)', marginBottom: 4, fontFamily: "'Syne', sans-serif" }}>
                   Progress icons
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--pb-text3)', lineHeight: 1.5, marginBottom: 10 }}>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5, marginBottom: 10 }}>
                   Build linear workflows with status progress icons.
                 </div>
                 <button
@@ -296,8 +297,8 @@ export function StatusSettingsModal({ productId, orgId, onClose }: StatusSetting
                     } catch {}
                   }}
                   style={{
-                    padding: '6px 12px', borderRadius: 6, border: '1px solid var(--pb-accent-alt)',
-                    background: 'transparent', color: 'var(--pb-accent-alt)',
+                    padding: '6px 12px', borderRadius: 6, border: 'none',
+                    background: 'var(--pb-gold)', color: 'var(--pb-black)',
                     cursor: 'pointer', fontSize: 12.5, fontFamily: "'DM Sans', sans-serif",
                   }}
                 >

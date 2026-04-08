@@ -76,7 +76,7 @@ export function AppSidebar() {
         {/* Top: Logo + Org Switcher */}
         <div style={{ padding: '18px 16px 14px' }}>
           <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 17, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 10 }}>
-            Prod<span style={{ color: 'var(--pb-accent-alt)' }}>Bod</span>
+            Prod<span style={{ color: 'var(--pb-gold)' }}>Bod</span>
           </div>
 
           {/* Org switcher */}
@@ -100,7 +100,7 @@ export function AppSidebar() {
                   <div
                     key={org.id}
                     onClick={() => { setCurrentOrgId(org.id); setOrgDropdownOpen(false); }}
-                    style={{ padding: '10px 12px', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, transition: 'background .12s', color: org.id === currentOrgId ? 'var(--pb-accent-alt)' : 'var(--pb-text)', fontWeight: org.id === currentOrgId ? 600 : 400 }}
+                    style={{ padding: '10px 12px', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, transition: 'background .12s', color: 'var(--pb-text)', fontWeight: org.id === currentOrgId ? 600 : 400 }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--pb-bg3)')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                   >
@@ -109,7 +109,7 @@ export function AppSidebar() {
                 ))}
                 <div
                   onClick={() => { setOrgDropdownOpen(false); setNewOrgModalOpen(true); }}
-                  style={{ padding: '10px 12px', cursor: 'pointer', fontSize: 13, color: 'var(--pb-accent-alt)', borderTop: '1px solid var(--pb-border)', display: 'flex', alignItems: 'center', gap: 8, transition: 'background .12s' }}
+                  style={{ padding: '10px 12px', cursor: 'pointer', fontSize: 13, color: 'var(--pb-text)', borderTop: '1px solid var(--pb-border)', display: 'flex', alignItems: 'center', gap: 8, transition: 'background .12s' }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--pb-bg3)')}
                   onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                 >

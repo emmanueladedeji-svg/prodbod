@@ -152,9 +152,9 @@ export default function Onboarding() {
   return (
     <div className="prodbod" style={{ display: 'flex', minHeight: '100vh', background: 'var(--pb-bg)', fontFamily: "'DM Sans', sans-serif" }}>
       {/* Sidebar */}
-      <div style={{ width: 280, background: 'var(--pb-bg2)', borderRight: '1px solid var(--pb-border)', padding: '32px 24px', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-        <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 40 }}>
-          Prod<span style={{ color: 'var(--pb-accent-alt)' }}>Bod</span>
+      <div style={{ width: 280, background: 'var(--pb-black)', padding: '32px 24px', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+        <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 40, color: '#fff' }}>
+          Prod<span style={{ color: 'var(--pb-gold)' }}>Bod</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {[
@@ -165,8 +165,8 @@ export default function Onboarding() {
             const isActive = step === i;
             const isDone = stepDone[i];
             return (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 'var(--pb-r)', fontSize: 13, color: isDone ? 'var(--pb-green)' : isActive ? 'var(--pb-text)' : 'var(--pb-text3)', background: isActive ? 'var(--pb-bg3)' : 'transparent' }}>
-                <div style={{ width: 22, height: 22, borderRadius: '50%', border: `1.5px solid ${isDone ? 'var(--pb-green)' : isActive ? 'var(--pb-accent-alt)' : 'var(--pb-border2)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, flexShrink: 0, color: isDone ? '#fff' : isActive ? '#fff' : 'var(--pb-text3)', background: isDone ? 'var(--pb-green)' : isActive ? 'var(--pb-accent-alt)' : 'transparent' }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 'var(--pb-r)', fontSize: 13, color: isDone ? 'rgba(255,255,255,0.75)' : isActive ? '#fff' : 'rgba(255,255,255,0.4)', background: 'transparent' }}>
+                <div style={{ width: 22, height: 22, borderRadius: '50%', border: `1.5px solid ${isDone ? '#fff' : isActive ? 'var(--pb-gold)' : 'rgba(255,255,255,0.2)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, flexShrink: 0, color: isDone ? 'var(--pb-black)' : isActive ? 'var(--pb-black)' : 'rgba(255,255,255,0.4)', background: isDone ? '#fff' : isActive ? 'var(--pb-gold)' : 'transparent' }}>
                   {isDone ? '✓' : s.n}
                 </div>
                 <span>{s.label}</span>
@@ -240,7 +240,7 @@ export default function Onboarding() {
               {alert && <div style={{ padding: '11px 14px', borderRadius: 'var(--pb-r)', fontSize: 13, marginBottom: 12, background: 'var(--pb-red-bg)', border: '1px solid var(--pb-red-border)', color: 'var(--pb-red)' }}>{alert}</div>}
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 28, paddingTop: 20, borderTop: '1px solid var(--pb-border)' }}>
-                <button onClick={handleStep0} disabled={isLoading} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '10px 18px', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 500, cursor: 'pointer', border: '1px solid var(--pb-accent)', background: 'var(--pb-accent)', color: '#fff', transition: 'all .15s' }}>
+                <button onClick={handleStep0} disabled={isLoading} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '10px 18px', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 500, cursor: 'pointer', border: 'none', background: 'var(--pb-gold)', color: 'var(--pb-text)', transition: 'all .15s' }}>
                   {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                   Continue →
                 </button>
@@ -331,7 +331,7 @@ export default function Onboarding() {
                 <button onClick={() => { setStepDone(prev => { const n=[...prev]; n[1]=false; return n; }); setStep(1); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '10px 18px', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 500, cursor: 'pointer', border: '1px solid var(--pb-border)', background: 'transparent', color: 'var(--pb-text2)', transition: 'all .15s' }}>
                   ← Back
                 </button>
-                <button onClick={handleFinish} disabled={isLoading} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '10px 18px', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 500, cursor: 'pointer', border: '1px solid var(--pb-accent)', background: 'var(--pb-accent)', color: '#fff', transition: 'all .15s' }}>
+                <button onClick={handleFinish} disabled={isLoading} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '10px 18px', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 500, cursor: 'pointer', border: 'none', background: 'var(--pb-gold)', color: 'var(--pb-text)', transition: 'all .15s' }}>
                   {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                   Launch workspace →
                 </button>

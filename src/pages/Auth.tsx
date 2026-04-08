@@ -33,7 +33,7 @@ export default function Auth() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--pb-bg)' }}>
-        <Loader2 className="h-7 w-7 animate-spin" style={{ color: 'var(--pb-accent-alt)' }} />
+        <Loader2 className="h-7 w-7 animate-spin" style={{ color: 'var(--pb-gold)' }} />
       </div>
     );
   }
@@ -110,7 +110,7 @@ export default function Auth() {
         >
           {/* Logo */}
           <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 28 }}>
-            Prod<span style={{ color: 'var(--pb-accent-alt)' }}>Bod</span>
+            Prod<span style={{ color: 'var(--pb-gold)' }}>Bod</span>
           </div>
 
           {view === 'signin' ? (
@@ -178,8 +178,8 @@ export default function Auth() {
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                     padding: '10px 18px', borderRadius: 'var(--pb-r)',
                     fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 500,
-                    cursor: 'pointer', border: '1px solid var(--pb-accent)',
-                    background: 'var(--pb-accent)', color: '#fff',
+                    cursor: 'pointer', border: 'none',
+                    background: 'var(--pb-gold)', color: 'var(--pb-text)',
                     width: '100%', marginTop: 4, transition: 'all .15s',
                   }}
                 >
@@ -190,7 +190,7 @@ export default function Auth() {
 
               <div style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: 'var(--pb-text2)' }}>
                 Don't have an account?{' '}
-                <span onClick={() => setView('signup')} style={{ color: 'var(--pb-accent-alt)', textDecoration: 'none', fontWeight: 500, cursor: 'pointer' }}>
+                <span onClick={() => setView('signup')} style={{ color: 'var(--pb-text)', textDecoration: 'underline', fontWeight: 500, cursor: 'pointer' }}>
                   Sign up
                 </span>
               </div>
@@ -263,8 +263,8 @@ export default function Auth() {
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                     padding: '10px 18px', borderRadius: 'var(--pb-r)',
                     fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 500,
-                    cursor: 'pointer', border: '1px solid var(--pb-accent)',
-                    background: 'var(--pb-accent)', color: '#fff',
+                    cursor: 'pointer', border: 'none',
+                    background: 'var(--pb-gold)', color: 'var(--pb-text)',
                     width: '100%', transition: 'all .15s',
                   }}
                 >
@@ -275,7 +275,7 @@ export default function Auth() {
 
               <div style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: 'var(--pb-text2)' }}>
                 Already have an account?{' '}
-                <span onClick={() => setView('signin')} style={{ color: 'var(--pb-accent-alt)', textDecoration: 'none', fontWeight: 500, cursor: 'pointer' }}>
+                <span onClick={() => setView('signin')} style={{ color: 'var(--pb-text)', textDecoration: 'underline', fontWeight: 500, cursor: 'pointer' }}>
                   Sign in
                 </span>
               </div>

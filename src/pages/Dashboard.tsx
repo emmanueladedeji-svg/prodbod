@@ -84,25 +84,25 @@ export default function Dashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14, marginBottom: 24 }}>
         <div style={{ background: 'var(--pb-bg2)', border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-rl)', padding: '18px 20px' }}>
           <div style={{ fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--pb-text3)', fontFamily: "'Syne', sans-serif", marginBottom: 6 }}>Total members</div>
-          {membersLoading ? <Loader2 className="h-5 w-5 animate-spin" style={{ color: 'var(--pb-accent-alt)' }} /> : (
+          {membersLoading ? <Loader2 className="h-5 w-5 animate-spin" style={{ color: 'var(--pb-gold)' }} /> : (
             <>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 30, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--pb-accent-alt)' }}>{members.length}</div>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 30, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--pb-text)' }}>{members.length}</div>
               <div style={{ fontSize: 12, color: 'var(--pb-text3)', marginTop: 3 }}>{activeMembers} active · {pendingMembers} pending</div>
             </>
           )}
         </div>
         <div style={{ background: 'var(--pb-bg2)', border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-rl)', padding: '18px 20px' }}>
           <div style={{ fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--pb-text3)', fontFamily: "'Syne', sans-serif", marginBottom: 6 }}>Products</div>
-          {productsLoading ? <Loader2 className="h-5 w-5 animate-spin" style={{ color: 'var(--pb-accent-alt)' }} /> : (
+          {productsLoading ? <Loader2 className="h-5 w-5 animate-spin" style={{ color: 'var(--pb-gold)' }} /> : (
             <>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 30, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--pb-accent-alt)' }}>{products.length}</div>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 30, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--pb-gold)' }}>{products.length}</div>
               <div style={{ fontSize: 12, color: 'var(--pb-text3)', marginTop: 3 }}>in this organisation</div>
             </>
           )}
         </div>
         <div style={{ background: 'var(--pb-bg2)', border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-rl)', padding: '18px 20px' }}>
           <div style={{ fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--pb-text3)', fontFamily: "'Syne', sans-serif", marginBottom: 6 }}>Organisation</div>
-          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 17, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--pb-accent-alt)', marginTop: 8 }}>{org?.name || '—'}</div>
+          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 17, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--pb-text)', marginTop: 8 }}>{org?.name || '—'}</div>
           <div style={{ fontSize: 12, color: 'var(--pb-text3)', marginTop: 3 }}>{org?.industry || 'No industry set'}</div>
         </div>
       </div>
@@ -117,7 +117,7 @@ export default function Dashboard() {
         </div>
         {productsLoading ? (
           <div style={{ padding: 40, textAlign: 'center' }}>
-            <Loader2 className="h-5 w-5 animate-spin mx-auto" style={{ color: 'var(--pb-accent-alt)' }} />
+            <Loader2 className="h-5 w-5 animate-spin mx-auto" style={{ color: 'var(--pb-gold)' }} />
           </div>
         ) : products.length === 0 ? (
           <div style={{ padding: 40, textAlign: 'center', color: 'var(--pb-text3)', fontSize: 13 }}>No products added yet</div>

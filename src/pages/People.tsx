@@ -154,7 +154,7 @@ export default function People() {
             <path d="M13 11h4M15 9v4" strokeLinecap="round"/>
           </svg>
           Invite people to{' '}
-          <span style={{ color: 'var(--pb-accent-alt)' }}>{org?.name || '—'}</span>
+          <span style={{ color: 'var(--pb-text)' }}>{org?.name || '—'}</span>
         </div>
 
         {/* Email tags input */}
@@ -227,7 +227,7 @@ export default function People() {
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center' }}><Loader2 className="h-5 w-5 animate-spin mx-auto" style={{ color: 'var(--pb-accent-alt)' }} /></td></tr>
+              <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center' }}><Loader2 className="h-5 w-5 animate-spin mx-auto" style={{ color: 'var(--pb-gold)' }} /></td></tr>
             ) : list.length === 0 ? (
               <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: 'var(--pb-text3)', fontSize: 13 }}>No members found</td></tr>
             ) : list.map((m) => {
@@ -296,7 +296,7 @@ function MemberRow({ member, displayName, email, av, avColor, isOwner, onRoleCha
       <td style={{ ...tdStyle, color: 'var(--pb-text2)', fontSize: 12.5 }}>{email}</td>
       <td style={tdStyle}>
         {isOwner ? (
-          <span style={{ fontSize: 13, color: 'var(--pb-accent-alt)', fontWeight: 600 }}>Owner</span>
+          <span style={{ fontSize: 12, fontWeight: 600, background: 'var(--pb-gold)', color: 'var(--pb-text)', padding: '2px 9px', borderRadius: 20, fontFamily: "'Syne', sans-serif", letterSpacing: '0.04em', textTransform: 'uppercase' }}>Owner</span>
         ) : (
           <select
             value={member.role}

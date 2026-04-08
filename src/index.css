@@ -136,32 +136,57 @@ All colors MUST be HSL.
   }
 }
 
-/* ProdBod design tokens */
+/* ProdBod design tokens — Black / White / Gold */
 :root {
-  --pb-bg: #fafaf8;
-  --pb-bg2: #ffffff;
-  --pb-bg3: #f4f4f1;
-  --pb-border: #e8e8e4;
-  --pb-border2: #d4d4ce;
-  --pb-text: #1a1a18;
-  --pb-text2: #5a5a55;
-  --pb-text3: #9a9a94;
-  --pb-accent: #1a1a18;
-  --pb-accent-alt: #3d6cff;
-  --pb-green: #16a34a;
-  --pb-green-bg: #f0fdf4;
+  /* ── Core brand ── */
+  --pb-black:        #0a0a0a;
+  --pb-white:        #ffffff;
+  --pb-gold:         #f6c445;
+
+  /* ── Gold scale ── */
+  --pb-gold-bg:      #fffbeb;
+  --pb-gold-100:     #fef3c7;
+  --pb-gold-200:     #fde68a;
+  --pb-gold-600:     #d4a017;
+
+  /* ── Black/grey scale ── */
+  --pb-black-50:     #f5f5f5;
+  --pb-black-100:    #ebebeb;
+  --pb-black-200:    #d4d4d4;
+  --pb-black-300:    #a3a3a3;
+  --pb-black-500:    #525252;
+  --pb-black-700:    #262626;
+  --pb-black-900:    #0a0a0a;
+
+  /* ── Legacy tokens (remapped to new values) ── */
+  --pb-bg:           #f5f5f5;   /* page background */
+  --pb-bg2:          #ffffff;   /* card / modal background */
+  --pb-bg3:          #f5f5f5;   /* hover / subtle fills */
+  --pb-border:       #ebebeb;   /* default border */
+  --pb-border2:      #d4d4d4;   /* strong border */
+  --pb-text:         #0a0a0a;   /* primary text */
+  --pb-text2:        #525252;   /* secondary text */
+  --pb-text3:        #a3a3a3;   /* muted / tertiary text */
+  --pb-accent:       #0a0a0a;   /* primary button background */
+  --pb-accent-alt:   #f6c445;   /* gold accent (was blue #3d6cff) */
+
+  /* ── Semantic colours ── */
+  --pb-green:        #16a34a;
+  --pb-green-bg:     #f0fdf4;
   --pb-green-border: #bbf7d0;
-  --pb-amber: #b45309;
-  --pb-amber-bg: #fffbeb;
+  --pb-amber:        #b45309;
+  --pb-amber-bg:     #fffbeb;
   --pb-amber-border: #fde68a;
-  --pb-red: #dc2626;
-  --pb-red-bg: #fef2f2;
-  --pb-red-border: #fecaca;
-  --pb-blue: #1d4ed8;
-  --pb-blue-bg: #eff6ff;
-  --pb-blue-border: #bfdbfe;
-  --pb-r: 8px;
-  --pb-rl: 12px;
+  --pb-red:          #dc2626;
+  --pb-red-bg:       #fef2f2;
+  --pb-red-border:   #fecaca;
+  --pb-blue:         #1d4ed8;
+  --pb-blue-bg:      #eff6ff;
+  --pb-blue-border:  #bfdbfe;
+
+  /* ── Radii ── */
+  --pb-r:   8px;
+  --pb-rl:  12px;
   --pb-rxl: 16px;
 }
 

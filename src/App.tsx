@@ -38,7 +38,7 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
   if (profileLoading || orgsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--pb-bg)' }}>
-        <Loader2 className="h-7 w-7 animate-spin" style={{ color: 'var(--pb-accent-alt)' }} />
+        <Loader2 className="h-7 w-7 animate-spin" style={{ color: 'var(--pb-gold)' }} />
       </div>
     );
   }
@@ -58,7 +58,7 @@ function ProtectedRoutes() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--pb-bg)' }}>
-        <Loader2 className="h-7 w-7 animate-spin" style={{ color: 'var(--pb-accent-alt)' }} />
+        <Loader2 className="h-7 w-7 animate-spin" style={{ color: 'var(--pb-gold)' }} />
       </div>
     );
   }
