@@ -12,18 +12,30 @@ export interface Invite {
   expires_at: string;
 }
 
+export type InviteStatus = 'valid' | 'expired' | 'already_accepted' | 'not_found';
+
+export interface InviteResult {
+  invite: Invite | null;
+  status: InviteStatus;
+}
+
 export function useGetInviteByToken(token: string | null) {
   return useQuery({
     queryKey: ['invite', token],
     enabled: !!token,
-    queryFn: async () => {
+    staleTime: 0,
+    queryFn: async (): Promise<InviteResult> => {
       const { data, error } = await supabase
         .from('invites')
         .select('*')
         .eq('token', token!)
         .maybeSingle();
+
       if (error) throw error;
-      return data as Invite | null;
+      if (!data) return { invite: null, status: 'not_found' };
+      if (data.accepted) return { invite: data as Invite, status: 'already_accepted' };
+      if (new Date(data.expires_at) < new Date()) return { invite: data as Invite, status: 'expired' };
+      return { invite: data as Invite, status: 'valid' };
     },
   });
 }

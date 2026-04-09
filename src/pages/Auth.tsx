@@ -29,6 +29,8 @@ export default function Auth() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [signUpState, setSignUpState] = useState<'form' | 'confirm-email'>('form');
+  const [confirmedEmail, setConfirmedEmail] = useState('');
 
   if (loading) {
     return (
@@ -42,6 +44,17 @@ export default function Auth() {
 
   const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
 
+  const mapSignInError = (msg: string) => {
+    if (/invalid login credentials|invalid credentials/i.test(msg)) return 'Incorrect email or password.';
+    if (/email not confirmed/i.test(msg)) return 'Please confirm your email first. Check your inbox.';
+    return msg || 'Sign in failed. Please try again.';
+  };
+
+  const mapSignUpError = (msg: string) => {
+    if (/user already registered|already registered/i.test(msg)) return 'An account with this email already exists. Try signing in instead.';
+    return msg || 'Could not create account. Please try again.';
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setSiError('');
@@ -52,7 +65,7 @@ export default function Auth() {
       const { error } = await supabase.auth.signInWithPassword({ email: siEmail.trim(), password: siPassword });
       if (error) throw error;
     } catch (err: any) {
-      setSiError(err.message || 'Incorrect email or password.');
+      setSiError(mapSignInError(err.message));
     } finally {
       setIsSubmitting(false);
     }
@@ -65,15 +78,21 @@ export default function Auth() {
     if (suPassword.length < 8) { setSuError('Password must be at least 8 characters.'); return; }
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: suEmail.trim(),
         password: suPassword,
         options: { emailRedirectTo: window.location.origin },
       });
       if (error) throw error;
-      // Redirect to onboarding after sign-up (session will be active)
+      // If no session returned, email confirmation is required
+      if (data.user && !data.session) {
+        setConfirmedEmail(suEmail.trim());
+        setSignUpState('confirm-email');
+        return;
+      }
+      // If session active immediately (email confirmation disabled), useAuth redirect handles it
     } catch (err: any) {
-      setSuError(err.message || 'Could not create account. Please try again.');
+      setSuError(mapSignUpError(err.message));
     } finally {
       setIsSubmitting(false);
     }
@@ -194,6 +213,30 @@ export default function Auth() {
                   Sign up
                 </span>
               </div>
+            </>
+          ) : signUpState === 'confirm-email' ? (
+            <>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 6, color: 'var(--pb-text)' }}>Check your inbox</div>
+              <div style={{ fontSize: 13, color: 'var(--pb-text2)', marginBottom: 24, lineHeight: 1.5 }}>
+                We sent a confirmation link to <strong>{confirmedEmail}</strong>. Click it to activate your account.
+              </div>
+              <div style={{ padding: '14px 16px', borderRadius: 'var(--pb-r)', background: 'var(--pb-bg3)', border: '1px solid var(--pb-border)', fontSize: 13, color: 'var(--pb-text2)', lineHeight: 1.6, marginBottom: 20 }}>
+                <strong>Didn't receive it?</strong> Check your spam folder, or{' '}
+                <span
+                  onClick={async () => {
+                    await supabase.auth.resend({ type: 'signup', email: confirmedEmail });
+                  }}
+                  style={{ color: 'var(--pb-text)', textDecoration: 'underline', cursor: 'pointer', fontWeight: 500 }}
+                >
+                  resend the email
+                </span>.
+              </div>
+              <button
+                onClick={() => { setSignUpState('form'); setView('signin'); }}
+                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '10px 18px', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 500, cursor: 'pointer', border: '1px solid var(--pb-border)', background: 'transparent', color: 'var(--pb-text)', width: '100%', transition: 'all .15s' }}
+              >
+                Back to sign in
+              </button>
             </>
           ) : (
             <>

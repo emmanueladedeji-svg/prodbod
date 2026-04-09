@@ -25,6 +25,7 @@ export interface UpsertProfileData {
 export function useUserProfile() {
   return useQuery({
     queryKey: ['user-profile'],
+    staleTime: 0,
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;

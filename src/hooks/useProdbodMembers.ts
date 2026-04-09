@@ -64,66 +64,122 @@ export function useOrgMembersProdbod(orgId: string | null) {
 export function useInviteMembers(orgId: string | null) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (emails: string[]): Promise<{ email: string; token: string }[]> => {
+    mutationFn: async (emails: string[]): Promise<{ email: string; token: string; emailSent: boolean }[]> => {
       if (!orgId) throw new Error('No org selected');
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const results: { email: string; token: string }[] = [];
+      // Fetch inviter name + org name once
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('first_name, last_name')
+        .eq('id', user.id)
+        .maybeSingle();
+      const inviterName = profile
+        ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || user.email || ''
+        : user.email || '';
+
+      const { data: orgData } = await supabase
+        .from('organizations')
+        .select('name')
+        .eq('id', orgId)
+        .maybeSingle();
+      const orgName = orgData?.name || '';
+
+      const results: { email: string; token: string; emailSent: boolean }[] = [];
 
       for (const email of emails) {
-        // Create invite token
-        const { data: invite, error: inviteError } = await supabase
-          .from('invites')
-          .insert({
-            email,
-            org_id: orgId,
-            invited_by: user.id,
-          })
-          .select()
-          .single();
-        if (inviteError) throw inviteError;
+        let inviteToken: string;
 
-        // Check if already a member
-        const { data: existing } = await supabase
-          .from('organization_members')
-          .select('id')
-          .eq('organization_id', orgId)
+        // Duplicate check: reuse an existing non-expired, non-accepted invite
+        const { data: existingInvite } = await supabase
+          .from('invites')
+          .select('id, token')
           .eq('email', email)
+          .eq('org_id', orgId)
+          .eq('accepted', false)
+          .gt('expires_at', new Date().toISOString())
+          .order('created_at', { ascending: false })
+          .limit(1)
           .maybeSingle();
 
-        if (!existing) {
-          // Get current user profile for invited_by name
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('first_name, last_name')
-            .eq('id', user.id)
+        if (existingInvite) {
+          inviteToken = existingInvite.token;
+        } else {
+          // Create new invite record
+          const { data: invite, error: inviteError } = await supabase
+            .from('invites')
+            .insert({ email, org_id: orgId, invited_by: user.id })
+            .select()
+            .single();
+          if (inviteError) throw inviteError;
+          inviteToken = invite.token;
+
+          // Create pending member row only if not already present
+          const { data: existingMember } = await supabase
+            .from('organization_members')
+            .select('id')
+            .eq('organization_id', orgId)
+            .eq('email', email)
             .maybeSingle();
 
-          const inviterName = profile
-            ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || user.email || ''
-            : user.email || '';
-
-          const { error: memError } = await supabase
-            .from('organization_members')
-            .insert({
-              organization_id: orgId,
-              name: email,
-              email,
-              role: 'Staff',
-              status: 'Pending',
-              invited_by: inviterName,
-            });
-          if (memError) throw memError;
+          if (!existingMember) {
+            const { error: memError } = await supabase
+              .from('organization_members')
+              .insert({
+                organization_id: orgId,
+                name: email,
+                email,
+                role: 'Staff',
+                status: 'Pending',
+                invited_by: inviterName,
+                invited_on: new Date().toISOString(),
+              });
+            if (memError) throw memError;
+          }
         }
 
-        results.push({ email, token: invite.token });
+        // Send email via edge function
+        let emailSent = false;
+        try {
+          const { data: fnData } = await supabase.functions.invoke('send-invite-email', {
+            body: { email, token: inviteToken, org_name: orgName, inviter_name: inviterName },
+          });
+          emailSent = fnData?.success === true;
+        } catch {
+          // Non-fatal: email sending failure doesn't break the invite
+          emailSent = false;
+        }
+
+        results.push({ email, token: inviteToken, emailSent });
       }
 
       return results;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['org-members', orgId] });
+    },
+  });
+}
+
+export function useResendInvite() {
+  return useMutation({
+    mutationFn: async ({
+      email,
+      token,
+      orgName,
+      inviterName,
+    }: {
+      email: string;
+      token: string;
+      orgName: string;
+      inviterName: string;
+    }) => {
+      const { data, error } = await supabase.functions.invoke('send-invite-email', {
+        body: { email, token, org_name: orgName, inviter_name: inviterName },
+      });
+      if (error) throw error;
+      return data as { success: boolean; error?: string };
     },
   });
 }

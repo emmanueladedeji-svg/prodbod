@@ -32,7 +32,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [currentOrganization, setCurrentOrganization] = useState<DbOrganization | null>(null);
   const [currentProduct, setCurrentProduct] = useState<DbProduct | null>(null);
   const [currentView, setCurrentView] = useState<ViewMode>('list');
-  const [currentOrgId, setCurrentOrgId] = useState<string | null>(null);
+  const [currentOrgId, setCurrentOrgIdState] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('pb-current-org-id') ?? null;
+    }
+    return null;
+  });
+
+  const setCurrentOrgId = (id: string | null) => {
+    setCurrentOrgIdState(id);
+    if (id) localStorage.setItem('pb-current-org-id', id);
+    else localStorage.removeItem('pb-current-org-id');
+  };
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('rest-dark-mode');
@@ -54,11 +65,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [organizations, currentOrganization]);
 
   // Sync currentOrgId with currentOrganization for ProdBod pages
+  // Only set if not already initialised from localStorage
   useEffect(() => {
     if (currentOrganization && !currentOrgId) {
       setCurrentOrgId(currentOrganization.id);
     }
   }, [currentOrganization]);
+
+  // Stale org guard: if stored orgId is no longer valid (removed / org deleted), fall back
+  useEffect(() => {
+    if (!organizations.length) return;
+    const validIds = organizations.map((o) => o.id);
+    if (currentOrgId && validIds.includes(currentOrgId)) return;
+    setCurrentOrgId(organizations[0].id);
+  }, [organizations]);
 
   // Auto-select first product when org changes
   useEffect(() => {

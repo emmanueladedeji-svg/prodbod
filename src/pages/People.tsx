@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { useMyOrgs } from '@/hooks/useProdbodOrgs';
-import { useOrgMembersProdbod, useInviteMembers, useUpdateMemberRole, useRemoveMember, ProdbodMember } from '@/hooks/useProdbodMembers';
+import { useOrgMembersProdbod, useInviteMembers, useUpdateMemberRole, useRemoveMember, useResendInvite, ProdbodMember } from '@/hooks/useProdbodMembers';
+import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 
 function avatarColor(s: string) {
@@ -19,36 +20,64 @@ function fmtDate(d: string | null) {
   return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 function capitalize(s: string) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
-
 function isValidEmail(e: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim()); }
 
-// Invite links modal
-function InviteLinksModal({ links, onClose }: { links: { email: string; token: string }[]; onClose: () => void }) {
+// Invite results modal — shows per-invite email delivery status
+function InviteResultsModal({ results, onClose }: { results: { email: string; token: string; emailSent: boolean }[]; onClose: () => void }) {
+  const anyFailed = results.some((r) => !r.emailSent);
+  const sentCount = results.filter((r) => r.emailSent).length;
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div style={{ background: 'var(--pb-bg2)', border: '1px solid var(--pb-border2)', borderRadius: 'var(--pb-rxl)', width: '100%', maxWidth: 520, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', fontFamily: "'DM Sans', sans-serif" }}>
         <div style={{ padding: '20px 22px 16px', borderBottom: '1px solid var(--pb-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700 }}>Invites sent!</div>
+          <div>
+            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700 }}>Invitations sent</div>
+            <div style={{ fontSize: 12, color: 'var(--pb-text3)', marginTop: 2 }}>
+              {anyFailed
+                ? `Emails sent to ${sentCount} of ${results.length} recipient${results.length !== 1 ? 's' : ''}`
+                : `${results.length} invitation email${results.length !== 1 ? 's' : ''} sent successfully`}
+            </div>
+          </div>
           <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--pb-border)', background: 'transparent', cursor: 'pointer', color: 'var(--pb-text3)', fontSize: 16 }}>✕</button>
         </div>
         <div style={{ padding: '20px 22px' }}>
-          <div style={{ padding: '11px 14px', borderRadius: 'var(--pb-r)', fontSize: 13, marginBottom: 16, background: 'var(--pb-blue-bg)', border: '1px solid var(--pb-blue-border)', color: 'var(--pb-blue)' }}>
-            Share these invite links with the recipients, or copy them to send via your preferred channel.
-          </div>
+          {anyFailed && (
+            <div style={{ padding: '10px 14px', borderRadius: 'var(--pb-r)', fontSize: 12.5, marginBottom: 16, background: 'var(--pb-amber-bg)', border: '1px solid var(--pb-amber-border)', color: 'var(--pb-amber)' }}>
+              Some emails couldn't be sent — share the links below manually.
+            </div>
+          )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {links.map(({ email, token }) => (
+            {results.map(({ email, token, emailSent }) => (
               <div key={token} style={{ background: 'var(--pb-bg3)', border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-r)', padding: '10px 14px' }}>
-                <div style={{ fontSize: 12, color: 'var(--pb-text3)', marginBottom: 4 }}>{email}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input readOnly value={`${window.location.origin}/invite?invite=${token}`} style={{ flex: 1, fontSize: 12, padding: '6px 10px', border: '1px solid var(--pb-border)', borderRadius: 6, background: 'var(--pb-bg2)', color: 'var(--pb-text)', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} onClick={(e) => (e.target as HTMLInputElement).select()} />
-                  <button onClick={() => navigator.clipboard.writeText(`${window.location.origin}/invite?invite=${token}`)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--pb-border)', background: 'var(--pb-bg2)', cursor: 'pointer', fontSize: 12, color: 'var(--pb-text2)', fontFamily: "'DM Sans', sans-serif" }}>Copy</button>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: emailSent ? 0 : 8 }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--pb-text)' }}>{email}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: emailSent ? 'var(--pb-green)' : 'var(--pb-amber)', fontWeight: 500 }}>
+                    {emailSent ? (
+                      <>
+                        <svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M1.5 6l3 3 6-6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        Email sent
+                      </>
+                    ) : (
+                      <>
+                        <svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M6 3v4M6 9v.5" strokeLinecap="round"/><circle cx="6" cy="6" r="5"/></svg>
+                        Link only
+                      </>
+                    )}
+                  </div>
                 </div>
+                {!emailSent && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input readOnly value={`${window.location.origin}/invite?invite=${token}`} style={{ flex: 1, fontSize: 12, padding: '6px 10px', border: '1px solid var(--pb-border)', borderRadius: 6, background: 'var(--pb-bg2)', color: 'var(--pb-text)', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} onClick={(e) => (e.target as HTMLInputElement).select()} />
+                    <button onClick={() => navigator.clipboard.writeText(`${window.location.origin}/invite?invite=${token}`)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--pb-border)', background: 'var(--pb-bg2)', cursor: 'pointer', fontSize: 12, color: 'var(--pb-text2)', fontFamily: "'DM Sans', sans-serif" }}>Copy</button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </div>
         <div style={{ padding: '14px 22px', borderTop: '1px solid var(--pb-border)', display: 'flex', justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '10px 18px', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 500, cursor: 'pointer', border: '1px solid var(--pb-accent)', background: 'var(--pb-accent)', color: '#fff' }}>
+          <button onClick={onClose} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '10px 18px', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 500, cursor: 'pointer', border: 'none', background: 'var(--pb-gold)', color: 'var(--pb-text)' }}>
             Done
           </button>
         </div>
@@ -64,6 +93,7 @@ export default function People() {
   const inviteMembers = useInviteMembers(currentOrgId);
   const updateRole = useUpdateMemberRole(currentOrgId);
   const removeMember = useRemoveMember(currentOrgId);
+  const resendInvite = useResendInvite();
 
   const org = orgs.find((o) => o.id === currentOrgId);
 
@@ -72,8 +102,13 @@ export default function People() {
   const [emailError, setEmailError] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'pending'>('all');
   const [search, setSearch] = useState('');
-  const [inviteLinks, setInviteLinks] = useState<{ email: string; token: string }[] | null>(null);
+  const [inviteResults, setInviteResults] = useState<{ email: string; token: string; emailSent: boolean }[] | null>(null);
+  const [resendingEmail, setResendingEmail] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const myName = userProfile
+    ? `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim()
+    : '';
 
   const addEmailTag = useCallback((email: string) => {
     const trimmed = email.trim().replace(/,$/, '');
@@ -112,14 +147,55 @@ export default function People() {
     const tags = emailInput.trim() ? [...emailTags, emailInput.trim().replace(/,$/, '')] : [...emailTags];
     const validTags = tags.filter((e) => isValidEmail(e));
     if (!validTags.length) { setEmailError('Add at least one email address.'); return; }
+
+    // Client-side duplicate guard
+    const pendingEmails = new Set(members.filter((m) => m.status === 'Pending').map((m) => m.email));
+    const alreadyPending = validTags.filter((e) => pendingEmails.has(e));
+    if (alreadyPending.length > 0) {
+      setEmailError(`Already pending: ${alreadyPending.join(', ')}. Use Resend on their row to re-send the invitation.`);
+      return;
+    }
+
     try {
       const results = await inviteMembers.mutateAsync(validTags);
       setEmailTags([]);
       setEmailInput('');
       setEmailError('');
-      setInviteLinks(results);
+      setInviteResults(results);
     } catch (e: any) {
       setEmailError(e.message || 'Failed to send invites.');
+    }
+  };
+
+  const handleResend = async (email: string) => {
+    if (!currentOrgId) return;
+    setResendingEmail(email);
+    try {
+      const { data: inv } = await supabase
+        .from('invites')
+        .select('token')
+        .eq('email', email)
+        .eq('org_id', currentOrgId)
+        .eq('accepted', false)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!inv?.token) {
+        alert('No pending invite found for this member. Please send a new invite.');
+        return;
+      }
+
+      await resendInvite.mutateAsync({
+        email,
+        token: inv.token,
+        orgName: org?.name || '',
+        inviterName: myName,
+      });
+    } catch {
+      alert('Failed to resend invite. Please try again.');
+    } finally {
+      setResendingEmail(null);
     }
   };
 
@@ -161,7 +237,6 @@ export default function People() {
         <div
           onClick={() => inputRef.current?.focus()}
           style={{ minHeight: 48, padding: '8px 10px', border: '1.5px solid var(--pb-border)', borderRadius: 'var(--pb-r)', display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', cursor: 'text', transition: 'border-color .15s', background: 'var(--pb-bg)' }}
-          onFocus={() => {}}
         >
           {emailTags.map((email, i) => (
             <div key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 8px', background: 'var(--pb-blue-bg)', border: '1px solid var(--pb-blue-border)', borderRadius: 4, fontSize: 12.5, color: 'var(--pb-blue)' }}>
@@ -184,9 +259,9 @@ export default function People() {
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, gap: 12, flexWrap: 'wrap' }}>
           <div style={{ fontSize: 12, color: 'var(--pb-text3)', flex: 1 }}>
-            Invited users join as <strong>Member</strong>. You can change roles in the table below after sending.
+            Invited users receive an email with a link to set up their account and join.
           </div>
-          <button onClick={handleSendInvites} disabled={inviteMembers.isPending} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 12px', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 12.5, fontWeight: 500, cursor: 'pointer', border: '1px solid var(--pb-accent)', background: 'var(--pb-accent)', color: '#fff', transition: 'all .15s' }}>
+          <button onClick={handleSendInvites} disabled={inviteMembers.isPending} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 12px', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 12.5, fontWeight: 500, cursor: 'pointer', border: 'none', background: 'var(--pb-gold)', color: 'var(--pb-text)', transition: 'all .15s' }}>
             {inviteMembers.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : (
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M2 8h12M10 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round"/>
@@ -248,10 +323,12 @@ export default function People() {
                   av={av}
                   avColor={avColor}
                   isOwner={isOwner}
+                  isResending={resendingEmail === email}
                   onRoleChange={(role) => updateRole.mutate({ memberId: m.id, role })}
                   onRemove={() => {
                     if (confirm(`Remove ${displayName || email}?`)) removeMember.mutate(m.id);
                   }}
+                  onResend={() => handleResend(email)}
                 />
               );
             })}
@@ -259,22 +336,25 @@ export default function People() {
         </table>
       </div>
 
-      {inviteLinks && <InviteLinksModal links={inviteLinks} onClose={() => setInviteLinks(null)} />}
+      {inviteResults && <InviteResultsModal results={inviteResults} onClose={() => setInviteResults(null)} />}
     </div>
   );
 }
 
-function MemberRow({ member, displayName, email, av, avColor, isOwner, onRoleChange, onRemove }: {
+function MemberRow({ member, displayName, email, av, avColor, isOwner, isResending, onRoleChange, onRemove, onResend }: {
   member: ProdbodMember;
   displayName: string;
   email: string;
   av: string;
   avColor: string;
   isOwner: boolean;
+  isResending: boolean;
   onRoleChange: (role: string) => void;
   onRemove: () => void;
+  onResend: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
+  const isPending = member.status === 'Pending';
 
   const tdStyle: React.CSSProperties = {
     padding: '12px 14px', fontSize: 13, borderBottom: '1px solid var(--pb-border)',
@@ -321,6 +401,26 @@ function MemberRow({ member, displayName, email, av, avColor, isOwner, onRoleCha
       <td style={tdStyle}>
         {!isOwner && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, opacity: hovered ? 1 : 0, transition: 'opacity .15s' }}>
+            {/* Resend invite — only for pending members */}
+            {isPending && (
+              <button
+                onClick={onResend}
+                disabled={isResending}
+                title="Resend invite email"
+                style={{ width: 28, height: 28, borderRadius: 5, border: '1px solid var(--pb-border)', background: 'var(--pb-bg2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--pb-text3)', transition: 'all .15s' }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--pb-gold)'; e.currentTarget.style.color = 'var(--pb-text)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--pb-border)'; e.currentTarget.style.color = 'var(--pb-text3)'; }}
+              >
+                {isResending
+                  ? <Loader2 style={{ width: 11, height: 11 }} className="animate-spin" />
+                  : (
+                    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6">
+                      <path d="M2 8l12-6-5 14-2-5-5-3z" strokeLinejoin="round"/>
+                    </svg>
+                  )
+                }
+              </button>
+            )}
             <button onClick={onRemove} title="Remove" style={{ width: 28, height: 28, borderRadius: 5, border: '1px solid var(--pb-border)', background: 'var(--pb-bg2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--pb-text3)', transition: 'all .15s' }}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--pb-red-border)'; e.currentTarget.style.color = 'var(--pb-red)'; e.currentTarget.style.background = 'var(--pb-red-bg)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--pb-border)'; e.currentTarget.style.color = 'var(--pb-text3)'; e.currentTarget.style.background = 'var(--pb-bg2)'; }}
