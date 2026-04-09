@@ -140,7 +140,7 @@ export default function AcceptInvite() {
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email: invite.email,
             password,
-            options: { emailRedirectTo: window.location.origin },
+            options: { emailRedirectTo: 'https://prodbod.vercel.app' },
           });
           if (signUpError) throw signUpError;
           if (!signUpData.user) throw new Error('Could not create account.');

@@ -81,7 +81,7 @@ export default function Auth() {
       const { data, error } = await supabase.auth.signUp({
         email: suEmail.trim(),
         password: suPassword,
-        options: { emailRedirectTo: window.location.origin },
+        options: { emailRedirectTo: 'https://prodbod.vercel.app' },
       });
       if (error) throw error;
       // If no session returned, email confirmation is required
@@ -104,7 +104,7 @@ export default function Auth() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: 'https://prodbod.vercel.app',
         },
       });
       if (error) throw error;
