@@ -104,6 +104,7 @@ export default function People() {
   const [search, setSearch] = useState('');
   const [inviteResults, setInviteResults] = useState<{ email: string; token: string; emailSent: boolean }[] | null>(null);
   const [resendingEmail, setResendingEmail] = useState<string | null>(null);
+  const [resendSentEmail, setResendSentEmail] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const myName = userProfile
@@ -186,12 +187,21 @@ export default function People() {
         return;
       }
 
-      await resendInvite.mutateAsync({
+      const result = await resendInvite.mutateAsync({
         email,
         token: inv.token,
         orgName: org?.name || '',
         inviterName: myName,
       });
+
+      if (result?.success === false) {
+        alert('Email could not be sent. Check that RESEND_API_KEY is set correctly.');
+        return;
+      }
+
+      // Show brief success state on the button
+      setResendSentEmail(email);
+      setTimeout(() => setResendSentEmail(null), 2500);
     } catch {
       alert('Failed to resend invite. Please try again.');
     } finally {
@@ -324,6 +334,7 @@ export default function People() {
                   avColor={avColor}
                   isOwner={isOwner}
                   isResending={resendingEmail === email}
+                  resendSent={resendSentEmail === email}
                   onRoleChange={(role) => updateRole.mutate({ memberId: m.id, role })}
                   onRemove={() => {
                     if (confirm(`Remove ${displayName || email}?`)) removeMember.mutate(m.id);
@@ -341,7 +352,7 @@ export default function People() {
   );
 }
 
-function MemberRow({ member, displayName, email, av, avColor, isOwner, isResending, onRoleChange, onRemove, onResend }: {
+function MemberRow({ member, displayName, email, av, avColor, isOwner, isResending, resendSent, onRoleChange, onRemove, onResend }: {
   member: ProdbodMember;
   displayName: string;
   email: string;
@@ -349,6 +360,7 @@ function MemberRow({ member, displayName, email, av, avColor, isOwner, isResendi
   avColor: string;
   isOwner: boolean;
   isResending: boolean;
+  resendSent: boolean;
   onRoleChange: (role: string) => void;
   onRemove: () => void;
   onResend: () => void;
@@ -403,23 +415,31 @@ function MemberRow({ member, displayName, email, av, avColor, isOwner, isResendi
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, opacity: hovered ? 1 : 0, transition: 'opacity .15s' }}>
             {/* Resend invite — only for pending members */}
             {isPending && (
-              <button
-                onClick={onResend}
-                disabled={isResending}
-                title="Resend invite email"
-                style={{ width: 28, height: 28, borderRadius: 5, border: '1px solid var(--pb-border)', background: 'var(--pb-bg2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--pb-text3)', transition: 'all .15s' }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--pb-gold)'; e.currentTarget.style.color = 'var(--pb-text)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--pb-border)'; e.currentTarget.style.color = 'var(--pb-text3)'; }}
-              >
-                {isResending
-                  ? <Loader2 style={{ width: 11, height: 11 }} className="animate-spin" />
-                  : (
-                    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6">
-                      <path d="M2 8l12-6-5 14-2-5-5-3z" strokeLinejoin="round"/>
-                    </svg>
-                  )
-                }
-              </button>
+              resendSent ? (
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 5, fontSize: 11.5, fontWeight: 500, background: 'var(--pb-green-bg)', border: '1px solid var(--pb-green-border)', color: 'var(--pb-green)', whiteSpace: 'nowrap' }}>
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1.5 6l3 3 6-6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  Sent
+                </div>
+              ) : (
+                <button
+                  onClick={onResend}
+                  disabled={isResending}
+                  title="Resend invite email"
+                  style={{ height: 28, padding: '0 10px', borderRadius: 5, border: '1px solid var(--pb-border)', background: 'var(--pb-bg2)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--pb-text3)', fontSize: 12, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, transition: 'all .15s', whiteSpace: 'nowrap' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--pb-gold)'; e.currentTarget.style.color = 'var(--pb-text)'; e.currentTarget.style.background = 'var(--pb-bg3)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--pb-border)'; e.currentTarget.style.color = 'var(--pb-text3)'; e.currentTarget.style.background = 'var(--pb-bg2)'; }}
+                >
+                  {isResending
+                    ? <Loader2 style={{ width: 11, height: 11 }} className="animate-spin" />
+                    : (
+                      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6">
+                        <path d="M2 8l12-6-5 14-2-5-5-3z" strokeLinejoin="round"/>
+                      </svg>
+                    )
+                  }
+                  {isResending ? 'Sending…' : 'Resend invite'}
+                </button>
+              )
             )}
             <button onClick={onRemove} title="Remove" style={{ width: 28, height: 28, borderRadius: 5, border: '1px solid var(--pb-border)', background: 'var(--pb-bg2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--pb-text3)', transition: 'all .15s' }}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--pb-red-border)'; e.currentTarget.style.color = 'var(--pb-red)'; e.currentTarget.style.background = 'var(--pb-red-bg)'; }}
