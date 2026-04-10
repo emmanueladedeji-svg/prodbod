@@ -18,9 +18,11 @@ serve(async (req) => {
       );
     }
 
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    if (!resendApiKey) {
-      console.error("RESEND_API_KEY secret not set");
+    const brevoApiKey = Deno.env.get("BREVO_API_KEY");
+    const brevoSenderEmail = Deno.env.get("BREVO_SENDER_EMAIL");
+
+    if (!brevoApiKey || !brevoSenderEmail) {
+      console.error("BREVO_API_KEY or BREVO_SENDER_EMAIL secret not set");
       return new Response(
         JSON.stringify({ success: false, error: "Email service not configured" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -65,32 +67,35 @@ serve(async (req) => {
 </table></td></tr></table>
 </body></html>`;
 
-    const resendRes = await fetch("https://api.resend.com/emails", {
+    const brevoRes = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${resendApiKey}`,
+        "api-key": brevoApiKey,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "ProdBod <onboarding@resend.dev>",
-        to: [email],
+        sender: { name: "ProdBod", email: brevoSenderEmail },
+        to: [{ email }],
         subject: `${inviterDisplay} invited you to ${orgDisplay} on ProdBod`,
-        html,
+        htmlContent: html,
       }),
     });
 
-    if (!resendRes.ok) {
-      const errBody = await resendRes.text();
-      console.error("Resend error:", resendRes.status, errBody);
+    if (!brevoRes.ok) {
+      const errBody = await brevoRes.text();
+      console.error("Brevo error:", brevoRes.status, errBody);
+      let parsedError: string;
+      try { parsedError = JSON.parse(errBody)?.message || errBody; }
+      catch { parsedError = errBody; }
       return new Response(
-        JSON.stringify({ success: false, error: `Resend API ${resendRes.status}` }),
+        JSON.stringify({ success: false, error: parsedError }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const resendData = await resendRes.json();
+    const brevoData = await brevoRes.json();
     return new Response(
-      JSON.stringify({ success: true, messageId: resendData.id }),
+      JSON.stringify({ success: true, messageId: brevoData.messageId }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
