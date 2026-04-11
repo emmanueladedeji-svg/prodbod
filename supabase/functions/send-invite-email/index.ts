@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,7 +30,42 @@ serve(async (req) => {
       );
     }
 
-    const inviteUrl = `https://prodbod.vercel.app/invite?invite=${token}`;
+    // --- Generate Supabase magic link ---
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    const redirectTo = `https://prodbod.vercel.app/invite?invite=${token}`;
+    let inviteUrl = redirectTo; // fallback to static URL
+
+    // Try 'invite' type first (creates new auth user + OTP link)
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: "invite",
+      email,
+      options: { redirectTo },
+    });
+
+    if (!linkError && linkData?.properties?.action_link) {
+      inviteUrl = linkData.properties.action_link;
+    } else if (linkError?.message?.includes("already registered")) {
+      // Existing user — generate a magic link sign-in instead
+      const { data: mlData, error: mlError } = await supabaseAdmin.auth.admin.generateLink({
+        type: "magiclink",
+        email,
+        options: { redirectTo },
+      });
+      if (!mlError && mlData?.properties?.action_link) {
+        inviteUrl = mlData.properties.action_link;
+      } else if (mlError) {
+        console.error("generateLink magiclink error:", mlError.message);
+      }
+    } else if (linkError) {
+      console.error("generateLink invite error:", linkError.message);
+    }
+    // ------------------------------------
+
     const orgDisplay = org_name || "a workspace";
     const inviterDisplay = inviter_name || "Someone";
 
