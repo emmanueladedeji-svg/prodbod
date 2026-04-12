@@ -64,7 +64,7 @@ export function useOrgMembersProdbod(orgId: string | null) {
 export function useInviteMembers(orgId: string | null) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (emails: string[]): Promise<{ email: string; token: string; emailSent: boolean }[]> => {
+    mutationFn: async (emails: string[]): Promise<{ email: string; token: string; emailSent: boolean; emailError?: string }[]> => {
       if (!orgId) throw new Error('No org selected');
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -86,7 +86,7 @@ export function useInviteMembers(orgId: string | null) {
         .maybeSingle();
       const orgName = orgData?.name || '';
 
-      const results: { email: string; token: string; emailSent: boolean }[] = [];
+      const results: { email: string; token: string; emailSent: boolean; emailError?: string }[] = [];
 
       for (const email of emails) {
         let inviteToken: string;
@@ -141,17 +141,22 @@ export function useInviteMembers(orgId: string | null) {
 
         // Send email via edge function
         let emailSent = false;
+        let emailError: string | undefined;
         try {
-          const { data: fnData } = await supabase.functions.invoke('send-invite-email', {
+          const { data: fnData, error: fnError } = await supabase.functions.invoke('send-invite-email', {
             body: { email, token: inviteToken, org_name: orgName, inviter_name: inviterName },
           });
-          emailSent = fnData?.success === true;
-        } catch {
-          // Non-fatal: email sending failure doesn't break the invite
-          emailSent = false;
+          if (fnError) {
+            emailError = fnError.message;
+          } else {
+            emailSent = fnData?.success === true;
+            if (!emailSent) emailError = fnData?.error || 'Unknown error from email service';
+          }
+        } catch (e: any) {
+          emailError = e?.message || 'Network error calling email service';
         }
 
-        results.push({ email, token: inviteToken, emailSent });
+        results.push({ email, token: inviteToken, emailSent, emailError });
       }
 
       return results;

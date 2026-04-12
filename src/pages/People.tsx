@@ -23,7 +23,7 @@ function capitalize(s: string) { return s ? s.charAt(0).toUpperCase() + s.slice(
 function isValidEmail(e: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim()); }
 
 // Invite results modal — shows per-invite email delivery status
-function InviteResultsModal({ results, onClose }: { results: { email: string; token: string; emailSent: boolean }[]; onClose: () => void }) {
+function InviteResultsModal({ results, onClose }: { results: { email: string; token: string; emailSent: boolean; emailError?: string }[]; onClose: () => void }) {
   const anyFailed = results.some((r) => !r.emailSent);
   const sentCount = results.filter((r) => r.emailSent).length;
 
@@ -48,7 +48,7 @@ function InviteResultsModal({ results, onClose }: { results: { email: string; to
             </div>
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {results.map(({ email, token, emailSent }) => (
+            {results.map(({ email, token, emailSent, emailError }) => (
               <div key={token} style={{ background: 'var(--pb-bg3)', border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-r)', padding: '10px 14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: emailSent ? 0 : 8 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--pb-text)' }}>{email}</div>
@@ -66,6 +66,11 @@ function InviteResultsModal({ results, onClose }: { results: { email: string; to
                     )}
                   </div>
                 </div>
+                {!emailSent && emailError && (
+                  <div style={{ fontSize: 11.5, color: 'var(--pb-red)', marginBottom: 8, padding: '5px 8px', background: 'var(--pb-red-bg)', borderRadius: 4, border: '1px solid var(--pb-red-border)' }}>
+                    Error: {emailError}
+                  </div>
+                )}
                 {!emailSent && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <input readOnly value={`${window.location.origin}/invite?invite=${token}`} style={{ flex: 1, fontSize: 12, padding: '6px 10px', border: '1px solid var(--pb-border)', borderRadius: 6, background: 'var(--pb-bg2)', color: 'var(--pb-text)', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} onClick={(e) => (e.target as HTMLInputElement).select()} />
@@ -102,7 +107,7 @@ export default function People() {
   const [emailError, setEmailError] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'pending'>('all');
   const [search, setSearch] = useState('');
-  const [inviteResults, setInviteResults] = useState<{ email: string; token: string; emailSent: boolean }[] | null>(null);
+  const [inviteResults, setInviteResults] = useState<{ email: string; token: string; emailSent: boolean; emailError?: string }[] | null>(null);
   const [resendingEmail, setResendingEmail] = useState<string | null>(null);
   const [resendSentEmail, setResendSentEmail] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
