@@ -63,6 +63,13 @@ export default function Onboarding() {
   useEffect(() => {
     if (profileLoading || hydrated) return;
     setHydrated(true);
+    // Invited users have onboarding_completed = true set by AcceptInvite.
+    // If they somehow land here (e.g. stale OnboardingGuard redirect), send
+    // them straight to the dashboard — they must NOT create an org.
+    if (savedProfile?.onboarding_completed) {
+      navigate('/');
+      return;
+    }
     if (!savedProfile?.first_name) return; // nothing saved yet — stay on step 0
     // Pre-fill step 0 fields
     setFirstName(savedProfile.first_name ?? '');
@@ -73,7 +80,7 @@ export default function Onboarding() {
     // Step 0 was already completed — jump to step 1
     setStep(1);
     setStepDone([true, false, false]);
-  }, [savedProfile, profileLoading, hydrated]);
+  }, [savedProfile, profileLoading, hydrated, navigate]);
 
   // Step 1 — Org
   const [orgName, setOrgName] = useState('');

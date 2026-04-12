@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useGetInviteByToken } from '@/hooks/useInvites';
 import { useAcceptInvite } from '@/hooks/useProdbodMembers';
+import { useApp } from '@/contexts/AppContext';
 import { Loader2 } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 
@@ -53,6 +55,8 @@ export default function AcceptInvite() {
   const [token, setToken] = useState<string | null>(rawToken);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
+  const queryClient = useQueryClient();
+  const { setCurrentOrgId } = useApp();
   const { data: inviteResult, isLoading: inviteLoading } = useGetInviteByToken(token);
   const acceptInvite = useAcceptInvite();
 
@@ -181,12 +185,16 @@ export default function AcceptInvite() {
         }
       }
 
-      await acceptInvite.mutateAsync({
+      const result = await acceptInvite.mutateAsync({
         token: token!,
         userId,
         profileData: { first_name: firstName.trim(), last_name: lastName.trim(), job_role: finalRole },
       });
 
+      // Wait for org membership to propagate so OnboardingGuard doesn't
+      // redirect to /onboarding due to stale orgs = [] cache
+      await queryClient.refetchQueries({ queryKey: ['my-orgs'] });
+      setCurrentOrgId(result.orgId);
       navigate('/');
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.');
