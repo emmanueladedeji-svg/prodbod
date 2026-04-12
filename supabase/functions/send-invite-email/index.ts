@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,8 +13,8 @@ serve(async (req) => {
 
     if (!email || !token) {
       return new Response(
-        JSON.stringify({ error: "email and token are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: "email and token are required" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -25,46 +24,71 @@ serve(async (req) => {
     if (!brevoApiKey || !brevoSenderEmail) {
       console.error("BREVO_API_KEY or BREVO_SENDER_EMAIL secret not set");
       return new Response(
-        JSON.stringify({ success: false, error: "Email service not configured" }),
+        JSON.stringify({ success: false, error: "Email service not configured — BREVO_API_KEY or BREVO_SENDER_EMAIL missing" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // --- Generate Supabase magic link ---
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
-
+    // --- Generate Supabase magic link WITHOUT triggering Supabase's own email ---
+    // Uses /admin/generate_link which returns the OTP link but does NOT send any email.
+    // This means only our Brevo email is sent — no double emails.
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const redirectTo = `https://prodbod.vercel.app/invite?invite=${token}`;
-    let inviteUrl = redirectTo; // fallback to static URL
+    let inviteUrl = redirectTo; // static fallback
 
-    // Try 'invite' type first (creates new auth user + OTP link)
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: "invite",
-      email,
-      options: { redirectTo },
-    });
+    if (supabaseUrl && serviceRoleKey) {
+      try {
+        // Try 'invite' type first — creates auth user if new + returns OTP link (no email sent)
+        const genRes = await fetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
+          method: "POST",
+          headers: {
+            "apikey": serviceRoleKey,
+            "Authorization": `Bearer ${serviceRoleKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ type: "invite", email, redirect_to: redirectTo }),
+        });
 
-    if (!linkError && linkData?.properties?.action_link) {
-      inviteUrl = linkData.properties.action_link;
-    } else if (linkError?.message?.includes("already registered")) {
-      // Existing user — generate a magic link sign-in instead
-      const { data: mlData, error: mlError } = await supabaseAdmin.auth.admin.generateLink({
-        type: "magiclink",
-        email,
-        options: { redirectTo },
-      });
-      if (!mlError && mlData?.properties?.action_link) {
-        inviteUrl = mlData.properties.action_link;
-      } else if (mlError) {
-        console.error("generateLink magiclink error:", mlError.message);
+        if (genRes.ok) {
+          const genData = await genRes.json();
+          if (genData?.action_link) {
+            inviteUrl = genData.action_link;
+            console.log("Generated invite magic link for:", email);
+          }
+        } else {
+          const errText = await genRes.text();
+          console.log("generate_link invite response:", genRes.status, errText);
+
+          // User already exists — generate a magic link sign-in instead (no email sent)
+          if (genRes.status === 422 || errText.includes("already registered") || errText.includes("already been registered")) {
+            const mlRes = await fetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
+              method: "POST",
+              headers: {
+                "apikey": serviceRoleKey,
+                "Authorization": `Bearer ${serviceRoleKey}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ type: "magiclink", email, redirect_to: redirectTo }),
+            });
+
+            if (mlRes.ok) {
+              const mlData = await mlRes.json();
+              if (mlData?.action_link) {
+                inviteUrl = mlData.action_link;
+                console.log("Generated magiclink for existing user:", email);
+              }
+            } else {
+              console.error("generate_link magiclink error:", mlRes.status, await mlRes.text());
+            }
+          }
+        }
+      } catch (linkErr) {
+        console.error("generate_link exception:", String(linkErr));
+        // Non-fatal — Brevo email still sends with static fallback URL
       }
-    } else if (linkError) {
-      console.error("generateLink invite error:", linkError.message);
     }
-    // ------------------------------------
+    // --------------------------------------------------------------------------
 
     const orgDisplay = org_name || "a workspace";
     const inviterDisplay = inviter_name || "Someone";
@@ -135,9 +159,10 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    console.error("Unhandled error:", String(err));
     return new Response(
-      JSON.stringify({ error: String(err) }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ success: false, error: String(err) }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
