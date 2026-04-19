@@ -1,5 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { slugify } from '@/utils/slugify';
+
+export const ORG_ROLES = ['Staff', 'Team Lead', 'Owner'] as const;
+export const DEPARTMENTS = [
+  'Engineer',
+  'Product Manager',
+  'QA Engineer',
+  'DevOps Engineer',
+  'Data Engineer',
+  'Product Marketer',
+  'Customer Support',
+] as const;
 
 export interface ProdbodMember {
   id: string;
@@ -8,6 +20,7 @@ export interface ProdbodMember {
   name: string;
   email: string | null;
   role: string;
+  department?: string | null;
   status: string;
   invited_by: string | null;
   invited_on: string | null;
@@ -185,6 +198,29 @@ export function useResendInvite() {
       });
       if (error) throw error;
       return data as { success: boolean; error?: string };
+    },
+  });
+}
+
+export function useUpdateMember(orgId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      memberId,
+      updates
+    }: {
+      memberId: string;
+      updates: Partial<Pick<ProdbodMember, 'role' | 'department' | 'status'>>
+    }) => {
+      const { error } = await supabase
+        .from('organization_members')
+        .update(updates)
+        .eq('id', memberId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['org-members', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['organization-members', orgId] });
     },
   });
 }
