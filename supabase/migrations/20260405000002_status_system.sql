@@ -93,8 +93,8 @@ DO $$
 DECLARE p record;
 DECLARE v_org_id UUID;
 BEGIN
-  FOR p IN SELECT * FROM public.products WHERE NOT EXISTS (
-    SELECT 1 FROM public.product_statuses WHERE product_id = p.id
+  FOR p IN SELECT pr.* FROM public.products pr WHERE NOT EXISTS (
+    SELECT 1 FROM public.product_statuses WHERE product_id = pr.id
   ) LOOP
     v_org_id := COALESCE(p.org_id, p.organization_id);
     INSERT INTO public.product_statuses (product_id, org_id, name, color, category, position, is_default, is_closed) VALUES
