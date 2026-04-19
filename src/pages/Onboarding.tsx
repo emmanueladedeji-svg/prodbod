@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserProfile, useUpsertUserProfile } from '@/hooks/useUserProfile';
-import { useCreateProdbodOrg } from '@/hooks/useProdbodOrgs';
+import { useCreateProdbodOrg, useMyOrgs } from '@/hooks/useProdbodOrgs';
 import { useAddProduct } from '@/hooks/useProdbodProducts';
 import { useApp } from '@/contexts/AppContext';
 import { MonthYearPicker } from '@/components/ui/MonthYearPicker';
@@ -41,6 +41,7 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const { setCurrentOrgId } = useApp();
   const { data: savedProfile, isLoading: profileLoading } = useUserProfile();
+  const { data: myOrgs = [], isLoading: orgsLoading } = useMyOrgs();
   const upsertProfile = useUpsertUserProfile();
   const createOrg = useCreateProdbodOrg();
   const addProduct = useAddProduct();
@@ -61,12 +62,14 @@ export default function Onboarding() {
 
   // Restore saved progress from DB on mount
   useEffect(() => {
-    if (profileLoading || hydrated) return;
+    if (profileLoading || orgsLoading || hydrated) return;
     setHydrated(true);
-    // Invited users have onboarding_completed = true set by AcceptInvite.
-    // If they somehow land here (e.g. stale OnboardingGuard redirect), send
-    // them straight to the dashboard — they must NOT create an org.
-    if (savedProfile?.onboarding_completed) {
+    // Invited users have onboarding_completed = true set by AcceptInvite and
+    // membership in at least one org. Only bypass the wizard when BOTH are
+    // true — otherwise OnboardingGuard bounces us back here and we loop.
+    // A stale onboarding_completed flag with zero orgs means the user must
+    // complete the wizard again to recover (create an org).
+    if (savedProfile?.onboarding_completed && myOrgs.length > 0) {
       navigate('/');
       return;
     }
@@ -80,7 +83,7 @@ export default function Onboarding() {
     // Step 0 was already completed — jump to step 1
     setStep(1);
     setStepDone([true, false, false]);
-  }, [savedProfile, profileLoading, hydrated, navigate]);
+  }, [savedProfile, profileLoading, orgsLoading, myOrgs.length, hydrated, navigate]);
 
   // Step 1 — Org
   const [orgName, setOrgName] = useState('');
