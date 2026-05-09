@@ -3,7 +3,8 @@ import { useApp } from '@/contexts/AppContext';
 import { useOrgProducts, useAddProduct } from '@/hooks/useProdbodProducts';
 import { useOrgMembersProdbod } from '@/hooks/useProdbodMembers';
 import { useMyOrgs } from '@/hooks/useProdbodOrgs';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 function AddProductModal({ orgId, onClose }: { orgId: string; onClose: () => void }) {
   const addProduct = useAddProduct();
@@ -49,7 +50,7 @@ function AddProductModal({ orgId, onClose }: { orgId: string; onClose: () => voi
           <button onClick={onClose} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '10px 18px', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 500, cursor: 'pointer', border: '1px solid var(--pb-border)', background: 'transparent', color: 'var(--pb-text2)', transition: 'all .15s' }}>
             Cancel
           </button>
-          <button onClick={handleAdd} disabled={addProduct.isPending} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px 18px', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 500, cursor: 'pointer', border: '1px solid var(--pb-accent)', background: 'var(--pb-accent)', color: '#fff', transition: 'all .15s' }}>
+          <button onClick={handleAdd} disabled={addProduct.isPending} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px 18px', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 500, cursor: 'pointer', border: 'none', background: 'var(--pb-gold)', color: 'var(--pb-text)', transition: 'all .15s' }}>
             {addProduct.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             Add product
           </button>
@@ -60,20 +61,42 @@ function AddProductModal({ orgId, onClose }: { orgId: string; onClose: () => voi
 }
 
 export default function Dashboard() {
-  const { currentOrgId } = useApp();
-  const { data: orgs = [] } = useMyOrgs();
+  const { currentOrgId, organizationsLoading } = useApp();
+  const { data: orgs = [], isLoading: myOrgsLoading } = useMyOrgs();
   const { data: products = [], isLoading: productsLoading } = useOrgProducts(currentOrgId);
   const { data: members = [], isLoading: membersLoading } = useOrgMembersProdbod(currentOrgId);
   const [showAddProduct, setShowAddProduct] = useState(false);
+  const navigate = useNavigate();
 
   const org = orgs.find((o) => o.id === currentOrgId);
   const activeMembers = members.filter((m) => m.status === 'Active').length;
   const pendingMembers = members.filter((m) => m.status === 'Pending').length;
 
-  if (!currentOrgId) {
+  const isGlobalLoading = organizationsLoading || myOrgsLoading;
+
+  if (isGlobalLoading) {
     return (
       <div className="prodbod" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--pb-text3)', fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>
         <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…
+      </div>
+    );
+  }
+
+  if (!currentOrgId) {
+    return (
+      <div className="prodbod" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', padding: 40, fontFamily: "'DM Sans', sans-serif" }}>
+        <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--pb-bg2)', border: '1px solid var(--pb-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20, fontSize: 24 }}>🏢</div>
+        <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, marginBottom: 8 }}>No organisation found</div>
+        <div style={{ color: 'var(--pb-text2)', fontSize: 14, maxWidth: 360, marginBottom: 24, lineHeight: 1.5 }}>
+          You don't seem to be part of any organisation yet. Create a new one to get started.
+        </div>
+        <button 
+          onClick={() => navigate('/onboarding')}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 24px', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600, cursor: 'pointer', border: 'none', background: 'var(--pb-gold)', color: 'var(--pb-text)', transition: 'all .15s' }}
+        >
+          <Plus size={18} />
+          Create organisation
+        </button>
       </div>
     );
   }

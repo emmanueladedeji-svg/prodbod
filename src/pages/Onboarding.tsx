@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { useUserProfile, useUpsertUserProfile } from '@/hooks/useUserProfile';
 import { useCreateProdbodOrg, useMyOrgs } from '@/hooks/useProdbodOrgs';
 import { useAddProduct } from '@/hooks/useProdbodProducts';
@@ -39,6 +41,7 @@ interface WizProduct { name: string; desc: string; }
 
 export default function Onboarding() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { setCurrentOrgId } = useApp();
   const { data: savedProfile, isLoading: profileLoading } = useUserProfile();
   const { data: myOrgs = [], isLoading: orgsLoading } = useMyOrgs();
@@ -64,13 +67,10 @@ export default function Onboarding() {
   useEffect(() => {
     if (profileLoading || orgsLoading || hydrated) return;
     setHydrated(true);
-    // Invited users have onboarding_completed = true set by AcceptInvite and
-    // membership in at least one org. Only bypass the wizard when BOTH are
-    // true — otherwise OnboardingGuard bounces us back here and we loop.
-    // A stale onboarding_completed flag with zero orgs means the user must
-    // complete the wizard again to recover (create an org).
-    if (savedProfile?.onboarding_completed && myOrgs.length > 0) {
-      navigate('/');
+    // If onboarding is marked as completed in the profile, we should not be here.
+    // Skip the wizard entirely.
+    if (savedProfile?.onboarding_completed) {
+      navigate('/', { replace: true });
       return;
     }
     if (!savedProfile?.first_name) return; // nothing saved yet — stay on step 0
@@ -141,6 +141,28 @@ export default function Onboarding() {
       }
 
       await upsertProfile.mutateAsync({ onboarding_completed: true });
+
+      // Send welcome email (fire and forget)
+      const { data: { user } } = await supabase.auth.getUser();
+      supabase.functions.invoke('send-welcome-email', {
+        body: { 
+          email: savedProfile?.email || user?.email, 
+          user_name: firstName || savedProfile?.first_name 
+        }
+      }).catch(e => console.error('Welcome email error:', e));
+
+      // Optimistically update the query cache BEFORE navigating so that
+      // OnboardingGuard immediately sees the correct state and does not
+      // redirect back to /onboarding due to stale data.
+      queryClient.setQueryData(['user-profile'], (old: any) =>
+        old ? { ...old, onboarding_completed: true } : old
+      );
+      queryClient.setQueryData(['my-orgs'], (old: any) => {
+        if (!old) return [org];
+        const alreadyExists = old.some((o: any) => o.id === org.id);
+        return alreadyExists ? old : [...old, org];
+      });
+
       setCurrentOrgId(oid);
       navigate('/');
     } catch (e: any) { setAlert(e.message || 'Failed to create workspace.'); }
@@ -183,6 +205,33 @@ export default function Onboarding() {
               </div>
             );
           })}
+        </div>
+
+        <div style={{ marginTop: 'auto', paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <button
+            onClick={async () => {
+              try {
+                // Clear everything to break the loop
+                await supabase.auth.signOut();
+                localStorage.clear();
+                sessionStorage.clear();
+                queryClient.clear();
+                window.location.href = '/auth';
+              } catch (err) {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/auth';
+              }
+            }}
+            style={{
+              width: '100%', padding: '10px 12px', borderRadius: 'var(--pb-r)',
+              fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.6)',
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+              cursor: 'pointer', transition: 'all .15s', textAlign: 'left'
+            }}
+          >
+            Sign out
+          </button>
         </div>
       </div>
 

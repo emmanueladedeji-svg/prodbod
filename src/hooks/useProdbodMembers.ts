@@ -157,7 +157,13 @@ export function useInviteMembers(orgId: string | null) {
         let emailError: string | undefined;
         try {
           const { data: fnData, error: fnError } = await supabase.functions.invoke('send-invite-email', {
-            body: { email, token: inviteToken, org_name: orgName, inviter_name: inviterName },
+            body: { 
+              email, 
+              token: inviteToken, 
+              org_name: orgName, 
+              inviter_name: inviterName,
+              site_url: window.location.origin 
+            },
           });
           if (fnError) {
             emailError = fnError.message;
@@ -194,7 +200,13 @@ export function useResendInvite() {
       inviterName: string;
     }) => {
       const { data, error } = await supabase.functions.invoke('send-invite-email', {
-        body: { email, token, org_name: orgName, inviter_name: inviterName },
+        body: { 
+          email, 
+          token, 
+          org_name: orgName, 
+          inviter_name: inviterName,
+          site_url: window.location.origin
+        },
       });
       if (error) throw error;
       return data as { success: boolean; error?: string };

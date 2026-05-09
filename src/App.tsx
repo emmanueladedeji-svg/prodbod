@@ -43,12 +43,16 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Needs onboarding if: no profile yet, OR onboarding not completed, OR no orgs
-  const needsOnboarding = !profile || !profile.onboarding_completed || orgs.length === 0;
-  if (needsOnboarding) {
-    return <Navigate to="/onboarding" replace />;
+  // Needs onboarding if: no profile yet, OR onboarding not explicitly completed.
+  // If they've completed onboarding but have no orgs, they'll see an empty state in the app 
+  // rather than being forced to create a NEW organization.
+  if (!profileLoading && !orgsLoading) {
+    if (!profile || !profile.onboarding_completed) {
+      // If we are already on onboarding page, don't redirect
+      if (window.location.pathname === '/onboarding') return <>{children}</>;
+      return <Navigate to="/onboarding" replace />;
+    }
   }
-
   return <>{children}</>;
 }
 
@@ -68,42 +72,40 @@ function ProtectedRoutes() {
   }
 
   return (
-    <AppProvider>
-      <Routes>
-        {/* Onboarding — shown before workspace is set up */}
-        <Route path="/onboarding" element={<Onboarding />} />
+    <Routes>
+      {/* Onboarding — shown before workspace is set up */}
+      <Route path="/onboarding" element={<Onboarding />} />
 
-        {/* App — only after onboarding is complete */}
-        <Route
-          path="/*"
-          element={
-            <OnboardingGuard>
-              <AppLayout>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/people" element={<People />} />
-                  <Route path="/product-profile" element={<ProductProfile />} />
-                  <Route path="/vision" element={<Vision />} />
-                  <Route path="/business-objectives" element={<BusinessObjectives />} />
-                  <Route path="/strategies" element={<Strategies />} />
-                  <Route path="/product-objectives" element={<ProductObjectives />} />
-                  <Route path="/features" element={<Features />} />
-                  <Route path="/tasks" element={<Tasks />} />
-                  <Route path="/feedback" element={<FeedbackPage />} />
-                  <Route path="/releases" element={<Releases />} />
-                  <Route path="/integrations" element={<Integrations />} />
-                  <Route path="/settings" element={<Settings />} />
-                  {/* Product workspace routes */}
-                  <Route path="/products/:productId" element={<ProductWorkspace />} />
-                  <Route path="/products/:productId/:listId" element={<ProductWorkspace />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </AppLayout>
-            </OnboardingGuard>
-          }
-        />
-      </Routes>
-    </AppProvider>
+      {/* App — only after onboarding is complete */}
+      <Route
+        path="/*"
+        element={
+          <OnboardingGuard>
+            <AppLayout>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/people" element={<People />} />
+                <Route path="/product-profile" element={<ProductProfile />} />
+                <Route path="/vision" element={<Vision />} />
+                <Route path="/business-objectives" element={<BusinessObjectives />} />
+                <Route path="/strategies" element={<Strategies />} />
+                <Route path="/product-objectives" element={<ProductObjectives />} />
+                <Route path="/features" element={<Features />} />
+                <Route path="/tasks" element={<Tasks />} />
+                <Route path="/feedback" element={<FeedbackPage />} />
+                <Route path="/releases" element={<Releases />} />
+                <Route path="/integrations" element={<Integrations />} />
+                <Route path="/settings" element={<Settings />} />
+                {/* Product workspace routes */}
+                <Route path="/products/:productId" element={<ProductWorkspace />} />
+                <Route path="/products/:productId/:listId" element={<ProductWorkspace />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AppLayout>
+          </OnboardingGuard>
+        }
+      />
+    </Routes>
   );
 }
 
@@ -113,13 +115,15 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/invite" element={<AcceptInvite />} />
-          {/* Protected routes */}
-          <Route path="/*" element={<ProtectedRoutes />} />
-        </Routes>
+        <AppProvider>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/invite" element={<AcceptInvite />} />
+            {/* Protected routes */}
+            <Route path="/*" element={<ProtectedRoutes />} />
+          </Routes>
+        </AppProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
