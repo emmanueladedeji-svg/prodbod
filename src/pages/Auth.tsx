@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 
 const GoogleIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24">
@@ -20,11 +20,13 @@ export default function Auth() {
   // Sign in state
   const [siEmail, setSiEmail] = useState('');
   const [siPassword, setSiPassword] = useState('');
+  const [showSiPassword, setShowSiPassword] = useState(false);
   const [siError, setSiError] = useState('');
 
   // Sign up state
   const [suEmail, setSuEmail] = useState('');
   const [suPassword, setSuPassword] = useState('');
+  const [showSuPassword, setShowSuPassword] = useState(false);
   const [suError, setSuError] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,15 +46,17 @@ export default function Auth() {
 
   const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
 
-  const mapSignInError = (msg: string) => {
+  const mapSignInError = (err: any) => {
+    const msg = typeof err === 'string' ? err : (err?.message || JSON.stringify(err));
     if (/invalid login credentials|invalid credentials/i.test(msg)) return 'Incorrect email or password.';
     if (/email not confirmed/i.test(msg)) return 'Please confirm your email first. Check your inbox.';
-    return msg || 'Sign in failed. Please try again.';
+    return msg === '{}' ? 'Sign in failed. Please try again.' : (msg || 'Sign in failed. Please try again.');
   };
 
-  const mapSignUpError = (msg: string) => {
+  const mapSignUpError = (err: any) => {
+    const msg = typeof err === 'string' ? err : (err?.message || JSON.stringify(err));
     if (/user already registered|already registered/i.test(msg)) return 'An account with this email already exists. Try signing in instead.';
-    return msg || 'Could not create account. Please try again.';
+    return msg === '{}' ? 'Could not create account. Please try again.' : (msg || 'Could not create account. Please try again.');
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -65,7 +69,7 @@ export default function Auth() {
       const { error } = await supabase.auth.signInWithPassword({ email: siEmail.trim(), password: siPassword });
       if (error) throw error;
     } catch (err: any) {
-      setSiError(mapSignInError(err.message));
+      setSiError(mapSignInError(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -81,7 +85,7 @@ export default function Auth() {
       const { data, error } = await supabase.auth.signUp({
         email: suEmail.trim(),
         password: suPassword,
-        options: { emailRedirectTo: 'https://prodbod.vercel.app' },
+        options: { emailRedirectTo: window.location.origin },
       });
       if (error) throw error;
       // If no session returned, email confirmation is required
@@ -92,7 +96,7 @@ export default function Auth() {
       }
       // If session active immediately (email confirmation disabled), useAuth redirect handles it
     } catch (err: any) {
-      setSuError(mapSignUpError(err.message));
+      setSuError(mapSignUpError(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -163,7 +167,7 @@ export default function Auth() {
 
               {siError && (
                 <div style={{ padding: '11px 14px', borderRadius: 'var(--pb-r)', fontSize: 13, marginBottom: 12, background: 'var(--pb-red-bg)', border: '1px solid var(--pb-red-border)', color: 'var(--pb-red)' }}>
-                  {siError}
+                  {typeof siError === 'object' && siError !== null ? (siError as any).message || JSON.stringify(siError) : String(siError)}
                 </div>
               )}
 
@@ -181,14 +185,23 @@ export default function Auth() {
                 </div>
                 <div style={{ marginBottom: 14 }}>
                   <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'var(--pb-text2)', marginBottom: 5, letterSpacing: '0.02em', textTransform: 'uppercase', fontFamily: "'Syne', sans-serif" }}>Password</label>
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    value={siPassword}
-                    onChange={(e) => setSiPassword(e.target.value)}
-                    style={{ width: '100%', padding: '10px 13px', border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, color: 'var(--pb-text)', background: 'var(--pb-bg)', outline: 'none' }}
-                    required
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showSiPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={siPassword}
+                      onChange={(e) => setSiPassword(e.target.value)}
+                      style={{ width: '100%', padding: '10px 13px', paddingRight: 40, border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, color: 'var(--pb-text)', background: 'var(--pb-bg)', outline: 'none' }}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSiPassword(!showSiPassword)}
+                      style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--pb-text3)', display: 'flex', alignItems: 'center' }}
+                    >
+                      {showSiPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
                 <button
                   type="submit"
@@ -269,7 +282,7 @@ export default function Auth() {
 
               {suError && (
                 <div style={{ padding: '11px 14px', borderRadius: 'var(--pb-r)', fontSize: 13, marginBottom: 12, background: 'var(--pb-red-bg)', border: '1px solid var(--pb-red-border)', color: 'var(--pb-red)' }}>
-                  {suError}
+                  {typeof suError === 'object' && suError !== null ? (suError as any).message || JSON.stringify(suError) : String(suError)}
                 </div>
               )}
 
@@ -288,15 +301,24 @@ export default function Auth() {
                   </div>
                   <div style={{ marginBottom: 14 }}>
                     <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'var(--pb-text2)', marginBottom: 5, letterSpacing: '0.02em', textTransform: 'uppercase', fontFamily: "'Syne', sans-serif" }}>Password</label>
-                    <input
-                      type="password"
-                      placeholder="Min. 8 characters"
-                      value={suPassword}
-                      onChange={(e) => setSuPassword(e.target.value)}
-                      style={{ width: '100%', padding: '10px 13px', border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, color: 'var(--pb-text)', background: 'var(--pb-bg)', outline: 'none' }}
-                      required
-                      minLength={8}
-                    />
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showSuPassword ? "text" : "password"}
+                        placeholder="Min. 8 characters"
+                        value={suPassword}
+                        onChange={(e) => setSuPassword(e.target.value)}
+                        style={{ width: '100%', padding: '10px 13px', paddingRight: 40, border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, color: 'var(--pb-text)', background: 'var(--pb-bg)', outline: 'none' }}
+                        required
+                        minLength={8}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSuPassword(!showSuPassword)}
+                        style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--pb-text3)', display: 'flex', alignItems: 'center' }}
+                      >
+                        {showSuPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <button

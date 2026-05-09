@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useGetInviteByToken } from '@/hooks/useInvites';
 import { useAcceptInvite } from '@/hooks/useProdbodMembers';
 import { useApp } from '@/contexts/AppContext';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 
 const PENDING_INVITE_KEY = 'pb-pending-invite-token';
@@ -33,16 +33,17 @@ const GoogleIcon = () => (
   </svg>
 );
 
-function ErrorCard({ message }: { message: string }) {
+function ErrorCard({ message, action }: { message: string | React.ReactNode, action?: React.ReactNode }) {
   return (
     <div className="prodbod min-h-screen flex items-center justify-center px-6" style={{ background: 'var(--pb-bg)', fontFamily: "'DM Sans', sans-serif" }}>
       <div style={{ maxWidth: 420, width: '100%', background: 'var(--pb-bg2)', border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-rxl)', padding: '36px 32px', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
         <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 28 }}>
           Prod<span style={{ color: 'var(--pb-gold)' }}>Bod</span>
         </div>
-        <div style={{ padding: '11px 14px', borderRadius: 'var(--pb-r)', fontSize: 13, background: 'var(--pb-red-bg)', border: '1px solid var(--pb-red-border)', color: 'var(--pb-red)' }}>
+        <div style={{ padding: '11px 14px', borderRadius: 'var(--pb-r)', fontSize: 13, background: 'var(--pb-red-bg)', border: '1px solid var(--pb-red-border)', color: 'var(--pb-red)', marginBottom: action ? 20 : 0 }}>
           {message}
         </div>
+        {action}
       </div>
     </div>
   );
@@ -66,6 +67,7 @@ export default function AcceptInvite() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [jobRole, setJobRole] = useState('');
   const [otherRole, setOtherRole] = useState('');
   const [error, setError] = useState('');
@@ -104,7 +106,7 @@ export default function AcceptInvite() {
     });
 
     return () => subscription.unsubscribe();
-  }, []); // rawToken captured on mount, stable
+  }, [rawToken]);
 
   useEffect(() => {
     const orgId = inviteResult?.invite?.org_id;
@@ -113,6 +115,25 @@ export default function AcceptInvite() {
         .then(({ data }) => setOrgName(data?.name || ''));
     }
   }, [inviteResult?.invite?.org_id]);
+
+  // AUTO-REDIRECT if already accepted and signed in as that user
+  useEffect(() => {
+    if (inviteResult?.status === 'already_accepted' && existingSession && inviteResult.invite?.email === existingSession.user.email) {
+      // User is already a member or at least already used the link.
+      // We should check if they are actually in organization_members.
+      supabase.from('organization_members')
+        .select('organization_id')
+        .eq('organization_id', inviteResult.invite.org_id)
+        .eq('member_user_id', existingSession.user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) {
+            setCurrentOrgId(data.organization_id);
+            navigate('/', { replace: true });
+          }
+        });
+    }
+  }, [inviteResult, existingSession, navigate, setCurrentOrgId]);
 
   const isReady = sessionChecked && !inviteLoading;
 
@@ -125,18 +146,69 @@ export default function AcceptInvite() {
     );
   }
 
+  const loginAction = (
+    <button
+      onClick={async () => {
+        await supabase.auth.signOut();
+        queryClient.clear();
+        window.location.href = '/auth';
+      }}
+      style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        padding: '10px 18px', borderRadius: 'var(--pb-r)',
+        fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 500,
+        cursor: 'pointer', border: 'none',
+        background: 'var(--pb-gold)', color: 'var(--pb-text)',
+        width: '100%', transition: 'all .15s',
+      }}
+    >
+      Go to Sign In
+    </button>
+  );
+
   // --- Error states ---
-  if (!token) return <ErrorCard message="Invalid invite link." />;
-  if (inviteResult?.status === 'not_found') return <ErrorCard message="This invite link is invalid." />;
-  if (inviteResult?.status === 'expired') return <ErrorCard message="This invite link has expired. Ask your workspace admin to resend your invitation." />;
-  if (inviteResult?.status === 'already_accepted') return <ErrorCard message="This invite has already been used. Try signing in instead." />;
+  if (!token) return <ErrorCard message="Invalid invite link." action={loginAction} />;
+  if (inviteResult?.status === 'not_found') return <ErrorCard message="This invite link is invalid." action={loginAction} />;
+  if (inviteResult?.status === 'expired') return <ErrorCard message="This invite link has expired. Ask your workspace admin to resend your invitation." action={loginAction} />;
+  
+  // If already accepted and NOT redirected by the auto-redirect above (e.g. wrong user signed in or not signed in)
+  if (inviteResult?.status === 'already_accepted') {
+    return <ErrorCard message="This invite has already been used. Try signing in instead." action={loginAction} />;
+  }
 
   const invite = inviteResult?.invite;
-  if (!invite) return <ErrorCard message="Something went wrong loading this invite." />;
+  if (!invite) return <ErrorCard message="Something went wrong loading this invite." action={loginAction} />;
 
   // Wrong account signed in via magic link
   if (existingSession && existingSession.user.email !== invite.email) {
-    return <ErrorCard message={`This invite was sent to ${invite.email}. Please sign out from your current account and try the link again.`} />;
+    return (
+      <ErrorCard 
+        message={
+          <div>
+            <p style={{ marginBottom: 16 }}>
+              This invite was sent to <strong style={{ color: 'var(--pb-text)' }}>{invite.email}</strong>. 
+              You are currently signed in as <strong style={{ color: 'var(--pb-text)' }}>{existingSession.user.email}</strong>.
+            </p>
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                window.location.reload();
+              }}
+              style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                padding: '8px 16px', borderRadius: 'var(--pb-r)',
+                fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600,
+                cursor: 'pointer', border: 'none',
+                background: 'var(--pb-gold)', color: 'var(--pb-text)',
+                width: '100%', transition: 'all .15s',
+              }}
+            >
+              Sign out to use this invite
+            </button>
+          </div>
+        } 
+      />
+    );
   }
 
   const hasMagicLinkSession = !!existingSession;
@@ -173,7 +245,7 @@ export default function AcceptInvite() {
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email: invite.email,
             password,
-            options: { emailRedirectTo: 'https://prodbod.vercel.app' },
+            options: { emailRedirectTo: window.location.origin },
           });
           if (signUpError) throw signUpError;
           if (!signUpData.user) throw new Error('Could not create account.');
@@ -191,11 +263,31 @@ export default function AcceptInvite() {
         profileData: { first_name: firstName.trim(), last_name: lastName.trim(), job_role: finalRole },
       });
 
-      // Wait for org membership to propagate so OnboardingGuard doesn't
-      // redirect to /onboarding due to stale orgs = [] cache
-      await queryClient.refetchQueries({ queryKey: ['my-orgs'] });
+      // Send welcome email (fire and forget)
+      supabase.functions.invoke('send-welcome-email', {
+        body: { 
+          email: invite.email, 
+          user_name: firstName.trim() 
+        }
+      }).catch(e => console.error('Welcome email error:', e));
+
+      // Optimistic update to prevent OnboardingGuard from redirecting to /onboarding
+      queryClient.setQueryData(['user-profile'], (old: any) => ({
+        ...old,
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        onboarding_completed: true
+      }));
+
+      // We don't have the full org object here, but we can trigger a refetch 
+      // and wait for it to be CERTAIN the cache is populated before navigating.
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['user-profile'] }),
+        queryClient.refetchQueries({ queryKey: ['my-orgs'] })
+      ]);
+
       setCurrentOrgId(result.orgId);
-      navigate('/');
+      navigate('/', { replace: true });
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.');
     } finally {
@@ -210,7 +302,7 @@ export default function AcceptInvite() {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: 'https://prodbod.vercel.app/invite' },
+        options: { redirectTo: `${window.location.origin}/invite` },
       });
       if (error) {
         sessionStorage.removeItem(PENDING_INVITE_KEY);
@@ -307,7 +399,24 @@ export default function AcceptInvite() {
           {!hasMagicLinkSession && (
             <div style={{ marginBottom: 14 }}>
               <label style={labelStyle}>Create password</label>
-              <input type="password" style={inputStyle} placeholder="Min. 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  style={{ ...inputStyle, paddingRight: 40 }}
+                  placeholder="Min. 8 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={8}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--pb-text3)', display: 'flex', alignItems: 'center' }}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
           )}
 

@@ -35,13 +35,13 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import {
-  useOrgMembers,
-  useInviteOrgMember,
-  useUpdateOrgMember,
-  useDeleteOrgMember,
+  useOrgMembersProdbod,
+  useInviteMembers,
+  useUpdateMember,
+  useRemoveMember,
   ORG_ROLES,
   DEPARTMENTS,
-} from '@/hooks/useOrgMembers';
+} from '@/hooks/useProdbodMembers';
 import { InviteMemberDialog } from './InviteMemberDialog';
 
 interface Props {
@@ -94,10 +94,10 @@ export function OrgPeopleSheet({ orgId, orgName, open, onOpenChange }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const { data: members = [], isLoading } = useOrgMembers(orgId);
-  const inviteMutation = useInviteOrgMember();
-  const updateMutation = useUpdateOrgMember();
-  const deleteMutation = useDeleteOrgMember();
+  const { data: members = [], isLoading } = useOrgMembersProdbod(orgId);
+  const inviteMutation = useInviteMembers(orgId);
+  const updateMutation = useUpdateMember(orgId);
+  const deleteMutation = useRemoveMember(orgId);
 
   const filtered = members.filter(
     (m) =>
@@ -105,16 +105,28 @@ export function OrgPeopleSheet({ orgId, orgName, open, onOpenChange }: Props) {
       (m.email && m.email.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const handleInvite = async (data: { name: string; email: string; department?: string }) => {
+  const handleInvite = async (data: { emails: string[]; department?: string }) => {
     try {
-      await inviteMutation.mutateAsync({
-        organization_id: orgId,
-        name: data.name,
-        email: data.email,
-        department: data.department,
-        invited_by: user?.email || undefined,
-      });
-      toast({ title: 'Member invited', description: `${data.name} has been invited.` });
+      const results = await inviteMutation.mutateAsync(data.emails);
+      
+      const successCount = results.filter(r => r.emailSent).length;
+      const failCount = results.length - successCount;
+
+      if (successCount > 0) {
+        toast({ 
+          title: 'Invites sent', 
+          description: `${successCount} invitation${successCount !== 1 ? 's' : ''} sent successfully.` 
+        });
+      }
+      
+      if (failCount > 0) {
+        toast({ 
+          title: 'Some invites failed', 
+          description: `${failCount} invitation${failCount !== 1 ? 's' : ''} could not be sent.`,
+          variant: 'destructive'
+        });
+      }
+
       setInviteOpen(false);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -122,20 +134,17 @@ export function OrgPeopleSheet({ orgId, orgName, open, onOpenChange }: Props) {
   };
 
   const handleRoleChange = (id: string, role: string) => {
-    updateMutation.mutate({ id, organization_id: orgId, updates: { role } });
+    updateMutation.mutate({ memberId: id, updates: { role } });
   };
 
   const handleDeptChange = (id: string, department: string) => {
-    updateMutation.mutate({ id, organization_id: orgId, updates: { department } });
+    updateMutation.mutate({ memberId: id, updates: { department } });
   };
 
   const handleRemove = (id: string) => {
-    deleteMutation.mutate(
-      { id, organization_id: orgId },
-      {
-        onSuccess: () => toast({ title: 'Member removed' }),
-      }
-    );
+    deleteMutation.mutate(id, {
+      onSuccess: () => toast({ title: 'Member removed' }),
+    });
   };
 
   return (

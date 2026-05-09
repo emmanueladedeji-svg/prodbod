@@ -116,6 +116,11 @@ export default function People() {
     ? `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim()
     : '';
 
+  // Determine current user's role in this organization
+  const myMemberRecord = members.find(m => m.member_user_id === userProfile?.id);
+  const myRole = myMemberRecord?.role || 'Staff';
+  const canManage = myRole === 'Owner' || myRole === 'Team Lead'; // Team Lead is Admin
+
   const addEmailTag = useCallback((email: string) => {
     const trimmed = email.trim().replace(/,$/, '');
     if (!trimmed) return;
@@ -200,7 +205,7 @@ export default function People() {
       });
 
       if (result?.success === false) {
-        alert('Email could not be sent. Check that RESEND_API_KEY is set correctly.');
+        alert('Email could not be sent. Check that BREVO_API_KEY is set correctly in .env.functions.local');
         return;
       }
 
@@ -338,6 +343,7 @@ export default function People() {
                   av={av}
                   avColor={avColor}
                   isOwner={isOwner}
+                  canManage={canManage}
                   isResending={resendingEmail === email}
                   resendSent={resendSentEmail === email}
                   onRoleChange={(role) => updateRole.mutate({ memberId: m.id, role })}
@@ -357,13 +363,14 @@ export default function People() {
   );
 }
 
-function MemberRow({ member, displayName, email, av, avColor, isOwner, isResending, resendSent, onRoleChange, onRemove, onResend }: {
+function MemberRow({ member, displayName, email, av, avColor, isOwner, canManage, isResending, resendSent, onRoleChange, onRemove, onResend }: {
   member: ProdbodMember;
   displayName: string;
   email: string;
   av: string;
   avColor: string;
   isOwner: boolean;
+  canManage: boolean;
   isResending: boolean;
   resendSent: boolean;
   onRoleChange: (role: string) => void;
@@ -392,8 +399,8 @@ function MemberRow({ member, displayName, email, av, avColor, isOwner, isResendi
       </td>
       <td style={{ ...tdStyle, color: 'var(--pb-text2)', fontSize: 12.5 }}>{email}</td>
       <td style={tdStyle}>
-        {isOwner ? (
-          <span style={{ fontSize: 12, fontWeight: 600, background: 'var(--pb-gold)', color: 'var(--pb-text)', padding: '2px 9px', borderRadius: 20, fontFamily: "'Syne', sans-serif", letterSpacing: '0.04em', textTransform: 'uppercase' }}>Owner</span>
+        {isOwner || !canManage ? (
+          <span style={{ fontSize: 12, fontWeight: 600, background: isOwner ? 'var(--pb-gold)' : 'var(--pb-bg3)', color: 'var(--pb-text)', padding: '2px 9px', borderRadius: 20, fontFamily: "'Syne', sans-serif", letterSpacing: '0.04em', textTransform: 'uppercase' }}>{isOwner ? 'Owner' : member.role === 'Team Lead' ? 'Admin' : 'Member'}</span>
         ) : (
           <select
             value={member.role}
@@ -416,7 +423,7 @@ function MemberRow({ member, displayName, email, av, avColor, isOwner, isResendi
       </td>
       <td style={{ ...tdStyle, color: 'var(--pb-text2)', fontSize: 12.5 }}>{fmtDate(member.last_active)}</td>
       <td style={tdStyle}>
-        {!isOwner && (
+        {!isOwner && canManage && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, opacity: hovered ? 1 : 0, transition: 'opacity .15s' }}>
             {/* Resend invite — only for pending members */}
             {isPending && (

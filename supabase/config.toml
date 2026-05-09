@@ -1,1 +1,8 @@
 project_id = "gwrtxvmkdmyirqkudcqw"
+
+[auth]
+site_url = "http://localhost:8081"
+additional_redirect_urls = ["http://localhost:8081/**"]
+
+[auth.external.google]
+enabled = false

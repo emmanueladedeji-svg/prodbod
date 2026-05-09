@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -17,26 +18,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { DEPARTMENTS } from '@/hooks/useOrgMembers';
+import { DEPARTMENTS } from '@/hooks/useProdbodMembers';
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onInvite: (data: { name: string; email: string; department?: string }) => void;
+  onInvite: (data: { emails: string[]; department?: string }) => void;
   loading?: boolean;
 }
 
 export function InviteMemberDialog({ open, onOpenChange, onInvite, loading }: Props) {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [emailsText, setEmailsText] = useState('');
   const [department, setDepartment] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim()) return;
-    onInvite({ name: name.trim(), email: email.trim(), department: department || undefined });
-    setName('');
-    setEmail('');
+    const emails = emailsText
+      .split(/[\s,]+/)
+      .map((e) => e.trim())
+      .filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+
+    if (emails.length === 0) return;
+
+    onInvite({ emails, department: department || undefined });
+    setEmailsText('');
     setDepartment('');
   };
 
@@ -49,25 +54,18 @@ export function InviteMemberDialog({ open, onOpenChange, onInvite, loading }: Pr
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="inv-name">Name</Label>
-            <Input
-              id="inv-name"
-              placeholder="Full name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+            <Label htmlFor="inv-emails">Emails</Label>
+            <Textarea
+              id="inv-emails"
+              placeholder="Enter emails separated by commas or new lines..."
+              value={emailsText}
+              onChange={(e) => setEmailsText(e.target.value)}
+              className="min-h-[100px] resize-none"
               required
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="inv-email">Email</Label>
-            <Input
-              id="inv-email"
-              type="email"
-              placeholder="name@company.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+            <p className="text-[11px] text-muted-foreground">
+              Invite multiple people at once by separating emails with commas or new lines.
+            </p>
           </div>
           <div className="space-y-2">
             <Label>Department</Label>
@@ -88,8 +86,8 @@ export function InviteMemberDialog({ open, onOpenChange, onInvite, loading }: Pr
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading || !name.trim() || !email.trim()}>
-              {loading ? 'Inviting…' : 'Send Invite'}
+            <Button type="submit" disabled={loading || !emailsText.trim()}>
+              {loading ? 'Inviting…' : 'Send Invites'}
             </Button>
           </DialogFooter>
         </form>

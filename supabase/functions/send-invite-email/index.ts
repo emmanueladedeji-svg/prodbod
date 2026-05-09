@@ -9,7 +9,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { email, token, org_name, inviter_name } = await req.json();
+    const { email, token, org_name, inviter_name, site_url } = await req.json();
+    const baseUrl = site_url || "https://prodbod.vercel.app";
 
     if (!email || !token) {
       return new Response(
@@ -20,8 +21,19 @@ serve(async (req) => {
 
     const brevoApiKey = Deno.env.get("BREVO_API_KEY");
     const brevoSenderEmail = Deno.env.get("BREVO_SENDER_EMAIL");
+    const supabaseUrlEnv = Deno.env.get("SUPABASE_URL") || "";
 
+    // Local dev mode: Brevo not configured but running against local Supabase.
+    // Return success so the invite link shown in the UI can be used for testing.
+    const isLocalDev = supabaseUrlEnv.includes("127.0.0.1") || supabaseUrlEnv.includes("localhost") || supabaseUrlEnv.includes("kong");
     if (!brevoApiKey || !brevoSenderEmail) {
+      if (isLocalDev) {
+        console.log("[local-dev] Brevo not configured — skipping email send. Use the invite link shown in the UI.");
+        return new Response(
+          JSON.stringify({ success: true, local_only: true, message: "Local dev: email skipped — use the invite link in the UI." }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       console.error("BREVO_API_KEY or BREVO_SENDER_EMAIL secret not set");
       return new Response(
         JSON.stringify({ success: false, error: "Email service not configured — BREVO_API_KEY or BREVO_SENDER_EMAIL missing" }),
@@ -34,7 +46,7 @@ serve(async (req) => {
     // This means only our Brevo email is sent — no double emails.
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const redirectTo = `https://prodbod.vercel.app/invite?invite=${token}`;
+    const redirectTo = `${baseUrl}/invite?invite=${token}`;
     let inviteUrl = redirectTo; // static fallback
 
     if (supabaseUrl && serviceRoleKey) {
