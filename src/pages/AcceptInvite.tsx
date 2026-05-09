@@ -228,7 +228,10 @@ export default function AcceptInvite() {
       let userId: string;
 
       if (hasMagicLinkSession) {
-        // User already authenticated via magic link email
+        // User already authenticated (magic link or previous attempt)
+        // Ensure they have the password they just typed
+        const { error: updateErr } = await supabase.auth.updateUser({ password });
+        if (updateErr) throw updateErr;
         userId = existingSession!.user.id;
       } else {
         // Try sign in first (handles existing accounts sharing links)
@@ -326,10 +329,8 @@ export default function AcceptInvite() {
         <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 6, color: 'var(--pb-text)' }}>
           {hasMagicLinkSession ? 'Set up your profile' : "You're invited!"}
         </div>
-        <div style={{ fontSize: 13, color: 'var(--pb-text2)', marginBottom: hasMagicLinkSession ? 6 : 24, lineHeight: 1.5 }}>
-          {hasMagicLinkSession
-            ? `Just a few details and you'll be in ${orgName ? `${orgName}` : 'the workspace'}.`
-            : `Set up your account to join ${orgName ? <strong>{orgName}</strong> : 'the workspace'}.`}
+        <div style={{ fontSize: 13, color: 'var(--pb-text2)', marginBottom: 24, lineHeight: 1.5 }}>
+          Set up your account to join {orgName ? <strong>{orgName}</strong> : 'the workspace'}.
         </div>
 
         {hasMagicLinkSession && (
@@ -382,43 +383,37 @@ export default function AcceptInvite() {
             </div>
           </div>
 
-          {/* Email — only shown on manual-link path */}
-          {!hasMagicLinkSession && (
-            <div style={{ marginBottom: 14 }}>
-              <label style={labelStyle}>Email</label>
-              <input
-                type="email"
-                value={invite.email}
-                readOnly
-                style={{ ...inputStyle, background: 'var(--pb-bg3)', color: 'var(--pb-text2)' }}
-              />
-            </div>
-          )}
+          <div style={{ marginBottom: 14 }}>
+            <label style={labelStyle}>Email</label>
+            <input
+              type="email"
+              value={invite.email}
+              readOnly
+              style={{ ...inputStyle, background: 'var(--pb-bg3)', color: 'var(--pb-text2)' }}
+            />
+          </div>
 
-          {/* Password — only shown on manual-link path */}
-          {!hasMagicLinkSession && (
-            <div style={{ marginBottom: 14 }}>
-              <label style={labelStyle}>Create password</label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  style={{ ...inputStyle, paddingRight: 40 }}
-                  placeholder="Min. 8 characters"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={8}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--pb-text3)', display: 'flex', alignItems: 'center' }}
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
+          <div style={{ marginBottom: 14 }}>
+            <label style={labelStyle}>{hasMagicLinkSession ? 'Confirm password' : 'Create password'}</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                style={{ ...inputStyle, paddingRight: 40 }}
+                placeholder="Min. 8 characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={8}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--pb-text3)', display: 'flex', alignItems: 'center' }}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
-          )}
+          </div>
 
           <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>Job role</label>
