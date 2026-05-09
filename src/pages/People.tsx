@@ -182,38 +182,51 @@ export default function People() {
     if (!currentOrgId) return;
     setResendingEmail(email);
     try {
-      const { data: inv } = await supabase
+      // 1. Try to find an existing pending invite
+      let { data: inv } = await supabase
         .from('invites')
         .select('token')
         .eq('email', email)
         .eq('org_id', currentOrgId)
         .eq('accepted', false)
+        .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (!inv?.token) {
-        alert('No pending invite found for this member. Please send a new invite.');
-        return;
+      let tokenToUse = inv?.token;
+
+      // 2. If no valid invite found, create a new one
+      if (!tokenToUse) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
+
+        const { data: newInv, error: invErr } = await supabase
+          .from('invites')
+          .insert({ email, org_id: currentOrgId, invited_by: user.id })
+          .select('token')
+          .single();
+        
+        if (invErr) throw invErr;
+        tokenToUse = newInv.token;
       }
 
       const result = await resendInvite.mutateAsync({
         email,
-        token: inv.token,
+        token: tokenToUse,
         orgName: org?.name || '',
         inviterName: myName,
       });
 
       if (result?.success === false) {
-        alert('Email could not be sent. Check that BREVO_API_KEY is set correctly in .env.functions.local');
+        alert('Email could not be sent. Check your Brevo configuration.');
         return;
       }
 
-      // Show brief success state on the button
       setResendSentEmail(email);
       setTimeout(() => setResendSentEmail(null), 2500);
-    } catch {
-      alert('Failed to resend invite. Please try again.');
+    } catch (e: any) {
+      alert(e.message || 'Failed to resend invite. Please try again.');
     } finally {
       setResendingEmail(null);
     }
