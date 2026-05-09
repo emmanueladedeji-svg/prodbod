@@ -15,9 +15,15 @@ function initials(name: string, email: string) {
   if (name) return name.split(' ').map((n) => n[0] || '').slice(0, 2).join('').toUpperCase();
   return email.substring(0, 2).toUpperCase();
 }
-function fmtDate(d: string | null) {
+function fmtDate(d: string | null, includeTime = false) {
   if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const options: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', year: 'numeric' };
+  if (includeTime) {
+    options.hour = '2-digit';
+    options.minute = '2-digit';
+    options.hour12 = true;
+  }
+  return new Date(d).toLocaleString('en-GB', options);
 }
 function capitalize(s: string) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 function isValidEmail(e: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim()); }
@@ -324,8 +330,8 @@ export default function People() {
       </div>
 
       {/* Table */}
-      <div style={{ background: 'var(--pb-bg2)', border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-rl)', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div style={{ background: 'var(--pb-bg2)', border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-rl)', overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 1000 }}>
           <thead>
             <tr>
               {['Name', 'Email', 'Role', 'Invited by', 'Invited on', 'Status', 'Last active', ''].map((h) => (
@@ -402,15 +408,31 @@ function MemberRow({ member, displayName, email, av, avColor, isOwner, canManage
   return (
     <tr onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
       <td style={tdStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, maxWidth: 220 }}>
           <div style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0, fontFamily: "'Syne', sans-serif", color: '#fff', background: avColor }}>{av}</div>
-          <div>
-            <div style={{ fontWeight: 500, fontSize: 13.5 }}>{displayName || email}</div>
-            {displayName && <div style={{ fontSize: 11.5, color: 'var(--pb-text3)' }}>{email}</div>}
+          <div style={{ overflow: 'hidden' }}>
+            <div 
+              style={{ fontWeight: 500, fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              title={displayName || email}
+            >
+              {displayName || email}
+            </div>
+            {displayName && (
+              <div 
+                style={{ fontSize: 11.5, color: 'var(--pb-text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                title={email}
+              >
+                {email}
+              </div>
+            )}
           </div>
         </div>
       </td>
-      <td style={{ ...tdStyle, color: 'var(--pb-text2)', fontSize: 12.5 }}>{email}</td>
+      <td style={{ ...tdStyle, color: 'var(--pb-text2)', fontSize: 12.5 }}>
+        <div style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={email}>
+          {email}
+        </div>
+      </td>
       <td style={tdStyle}>
         {isOwner || !canManage ? (
           <span style={{ fontSize: 12, fontWeight: 600, background: isOwner ? 'var(--pb-gold)' : 'var(--pb-bg3)', color: 'var(--pb-text)', padding: '2px 9px', borderRadius: 20, fontFamily: "'Syne', sans-serif", letterSpacing: '0.04em', textTransform: 'uppercase' }}>{isOwner ? 'Owner' : member.role === 'Team Lead' ? 'Admin' : 'Member'}</span>
@@ -434,7 +456,7 @@ function MemberRow({ member, displayName, email, av, avColor, isOwner, canManage
           {capitalize(member.status)}
         </span>
       </td>
-      <td style={{ ...tdStyle, color: 'var(--pb-text2)', fontSize: 12.5 }}>{fmtDate(member.last_active)}</td>
+      <td style={{ ...tdStyle, color: 'var(--pb-text2)', fontSize: 12.5 }}>{fmtDate(member.last_active, true)}</td>
       <td style={tdStyle}>
         {!isOwner && canManage && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, opacity: hovered ? 1 : 0, transition: 'opacity .15s' }}>
