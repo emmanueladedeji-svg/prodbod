@@ -48,13 +48,34 @@ export function useWorkspaceFeatures(listId: string | null) {
     queryKey: ['workspace-features', listId],
     enabled: !!listId,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from('workspace_features')
-        .select('*')
-        .eq('list_id', listId!)
-        .order('position', { ascending: true });
-      if (error) throw error;
-      return (data || []) as Feature[];
+      try {
+        const { data, error } = await (supabase as any)
+          .from('workspace_features')
+          .select(`
+            *,
+            product_statuses!workspace_features_status_id_fkey (
+              name,
+              color,
+              category
+            )
+          `)
+          .eq('list_id', listId!)
+          .order('position', { ascending: true });
+
+        if (error) {
+          // Fallback if relationship name is different
+          const { data: fallbackData } = await (supabase as any)
+            .from('workspace_features')
+            .select('*, product_statuses(name, color, category)')
+            .eq('list_id', listId!)
+            .order('position', { ascending: true });
+          return (fallbackData || []) as Feature[];
+        }
+        return (data || []) as Feature[];
+      } catch (err) {
+        console.error('Error in useWorkspaceFeatures:', err);
+        return [];
+      }
     },
   });
 }

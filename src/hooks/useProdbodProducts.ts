@@ -11,6 +11,7 @@ export interface ProdbodProduct {
   // These may be undefined if the migration hasn't been applied yet.
   icon_color?: string | null;
   icon_letter?: string | null;
+  emoji_icon?: string | null;
   owner_id?: string | null;
   default_views?: string[] | null;
   progress_icons_enabled?: boolean;
@@ -84,7 +85,7 @@ export function useUpdateProductSettings() {
   return useMutation({
     mutationFn: async ({ id, orgId, ...fields }: {
       id: string; orgId: string;
-      name?: string; icon_color?: string; icon_letter?: string;
+      name?: string; icon_color?: string; icon_letter?: string; emoji_icon?: string;
       owner_id?: string | null; description?: string | null;
       default_views?: string[]; progress_icons_enabled?: boolean;
     }) => {

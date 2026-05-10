@@ -5,7 +5,7 @@ import { useApp } from '@/contexts/AppContext';
 import { useMyOrgs } from '@/hooks/useProdbodOrgs';
 import { useOrgProducts } from '@/hooks/useProdbodProducts';
 import { useProductLists } from '@/hooks/useLists';
-import { useWorkspaceFeatures, Feature } from '@/hooks/useWorkspaceFeatures';
+import { useWorkspaceFeatures, Feature, useUpdateWorkspaceFeature } from '@/hooks/useWorkspaceFeatures';
 import { useOrgMembersProdbod } from '@/hooks/useProdbodMembers';
 import { useProductStatuses } from '@/hooks/useProductStatuses';
 import { WorkspaceShell } from '@/components/workspace/WorkspaceShell';
@@ -13,6 +13,7 @@ import { ListView } from '@/components/workspace/ListView';
 import { BoardView } from '@/components/workspace/BoardView';
 import { FeatureDetailPanel } from '@/components/workspace/FeatureDetailPanel';
 import { InlineAddRow } from '@/components/workspace/InlineAddRow';
+import { PeoplePicker } from '@/components/dashboard/PeoplePicker';
 
 export default function ProductWorkspace() {
   const { productId, listId } = useParams<{ productId: string; listId: string }>();
@@ -24,10 +25,20 @@ export default function ProductWorkspace() {
   const { data: features = [], isLoading: featuresLoading } = useWorkspaceFeatures(listId ?? null);
   const { data: members = [] } = useOrgMembersProdbod(currentOrgId);
   const { data: productStatuses = [] } = useProductStatuses(productId ?? null);
+  const updateFeature = useUpdateWorkspaceFeature();
 
   const [view, setView] = useState<'list' | 'board'>('list');
   const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null);
   const [showInlineAdd, setShowInlineAdd] = useState(false);
+  const [pickerState, setPickerState] = useState<{
+    isOpen: boolean;
+    featureId: string | null;
+    title: string;
+  }>({
+    isOpen: false,
+    featureId: null,
+    title: 'Assign Team Member'
+  });
 
   const product = (products as any[]).find((p: any) => p.id === productId) ?? null;
   const progressEnabled = (product as any)?.progress_icons_enabled ?? false;
@@ -35,6 +46,21 @@ export default function ProductWorkspace() {
   const list = lists.find(l => l.id === listId) ?? null;
   const currentOrg = orgs.find(o => o.id === currentOrgId);
   const orgName = currentOrg?.name || '—';
+
+  const handleAssign = (featureId: string) => {
+    setPickerState({
+      isOpen: true,
+      featureId,
+      title: 'Assign Team Member'
+    });
+  };
+
+  const handlePickerSelect = async (userId: string) => {
+    if (pickerState.featureId) {
+      await updateFeature.mutateAsync({ id: pickerState.featureId, assignee_id: userId });
+    }
+    setPickerState(prev => ({ ...prev, isOpen: false }));
+  };
 
   // If no listId but product has lists, navigate to first list
   useEffect(() => {
@@ -99,6 +125,7 @@ export default function ProductWorkspace() {
             productId={productId}
             orgId={orgId}
             onOpenDetail={setSelectedFeature}
+            onAssign={handleAssign}
             members={members}
             productStatuses={productStatuses}
             progressEnabled={progressEnabled}
@@ -146,8 +173,18 @@ export default function ProductWorkspace() {
           orgId={orgId}
           onClose={() => setSelectedFeature(null)}
           onOpenDetail={setSelectedFeature}
+          onAssign={handleAssign}
+          members={members}
         />
       )}
+
+      {/* People picker modal */}
+      <PeoplePicker
+        isOpen={pickerState.isOpen}
+        title={pickerState.title}
+        onSelect={handlePickerSelect}
+        onClose={() => setPickerState(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

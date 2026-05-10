@@ -38,6 +38,7 @@ interface FeatureRowProps {
   productId: string;
   orgId: string;
   onOpenDetail: (f: Feature) => void;
+  onAssign: (featureId: string) => void;
   members: ProdbodMember[];
   productStatuses: ProductStatus[];
   onStatusChange: (featureId: string, newStatusId: string) => void;
@@ -47,7 +48,7 @@ interface FeatureRowProps {
 
 export function FeatureRow({
   feature, childFeatures, allFeatures, nestLevel, listId, productId, orgId,
-  onOpenDetail, members, productStatuses, onStatusChange, isArriving, progressEnabled,
+  onOpenDetail, onAssign, members, productStatuses, onStatusChange, isArriving, progressEnabled,
 }: FeatureRowProps) {
   const [expanded, setExpanded] = useState(true);
   const [hovered, setHovered] = useState(false);
@@ -276,7 +277,15 @@ export function FeatureRow({
         )}
 
         {/* Assignee (90px) */}
-        <div style={{ width: 90, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+        <div 
+          onClick={(e) => { e.stopPropagation(); onAssign(feature.id); }}
+          style={{ 
+            width: 90, flexShrink: 0, display: 'flex', alignItems: 'center', 
+            justifyContent: 'flex-start', cursor: 'pointer', transition: 'opacity .1s'
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.7')}
+          onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+        >
           {assigneeInitials ? (
             <div
               title={assignee?.name || assignee?.email || ''}
@@ -290,7 +299,13 @@ export function FeatureRow({
               {assigneeInitials}
             </div>
           ) : (
-            <span style={{ fontSize: 12, color: 'var(--pb-text3)' }}>—</span>
+            <span style={{ 
+              fontSize: 12, color: 'var(--pb-text3)', width: 22, height: 22, 
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: '50%', border: '1px dashed var(--pb-border)',
+            }}>
+              +
+            </span>
           )}
         </div>
 
@@ -340,6 +355,7 @@ export function FeatureRow({
           productId={productId}
           orgId={orgId}
           onOpenDetail={onOpenDetail}
+          onAssign={onAssign}
           members={members}
           productStatuses={productStatuses}
           onStatusChange={onStatusChange}

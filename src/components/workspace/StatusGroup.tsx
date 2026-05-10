@@ -15,6 +15,7 @@ interface StatusGroupProps {
   productId: string;
   orgId: string;
   onOpenDetail: (f: Feature) => void;
+  onAssign: (featureId: string) => void;
   members: ProdbodMember[];
   productStatuses: ProductStatus[];
   onStatusChange: (featureId: string, newStatusId: string) => void;
@@ -25,7 +26,7 @@ interface StatusGroupProps {
 }
 
 export function StatusGroup({
-  status, features, allFeatures, listId, productId, orgId, onOpenDetail, members,
+  status, features, allFeatures, listId, productId, orgId, onOpenDetail, onAssign, members,
   productStatuses, onStatusChange, arrivingFeatureId, progressEnabled, isDropTarget, dropTargetColor,
 }: StatusGroupProps) {
   const [collapsed, setCollapsed] = useState(false);
@@ -141,6 +142,7 @@ export function StatusGroup({
               productId={productId}
               orgId={orgId}
               onOpenDetail={onOpenDetail}
+              onAssign={onAssign}
               members={members}
               productStatuses={productStatuses}
               onStatusChange={onStatusChange}

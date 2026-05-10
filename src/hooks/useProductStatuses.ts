@@ -8,7 +8,7 @@ export function useProductStatuses(productId: string | null) {
 
   useEffect(() => {
     if (!productId) return;
-    const channel = supabase
+    const channel = (supabase as any)
       .channel(`product-statuses-${productId}`)
       .on('postgres_changes' as any, {
         event: '*', schema: 'public', table: 'product_statuses',
@@ -24,13 +24,22 @@ export function useProductStatuses(productId: string | null) {
     queryKey: ['product-statuses', productId],
     enabled: !!productId,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from('product_statuses')
-        .select('*')
-        .eq('product_id', productId!)
-        .order('category').order('position');
-      if (error) throw error;
-      return (data || []) as ProductStatus[];
+      try {
+        const { data, error } = await (supabase as any)
+          .from('product_statuses')
+          .select('*')
+          .eq('product_id', productId!)
+          .order('position', { ascending: true });
+        
+        if (error) {
+          console.warn('Error fetching product statuses:', error);
+          return [];
+        }
+        return (data || []) as ProductStatus[];
+      } catch (err) {
+        console.error('Fatal error in useProductStatuses:', err);
+        return [];
+      }
     },
   });
 }

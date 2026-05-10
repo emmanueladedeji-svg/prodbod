@@ -14,13 +14,14 @@ interface ListViewProps {
   productId: string;
   orgId: string;
   onOpenDetail: (f: Feature) => void;
+  onAssign: (featureId: string) => void;
   members: ProdbodMember[];
   productStatuses: ProductStatus[];
   progressEnabled?: boolean;
 }
 
 export function ListView({
-  features, listId, productId, orgId, onOpenDetail, members, productStatuses, progressEnabled,
+  features, listId, productId, orgId, onOpenDetail, onAssign, members, productStatuses, progressEnabled,
 }: ListViewProps) {
   const updateFeature = useUpdateWorkspaceFeature();
 
@@ -110,6 +111,15 @@ export function ListView({
 
   const activeDragFeature = activeDragId ? features.find(f => f.id === activeDragId) : null;
 
+  if (productStatuses.length === 0) {
+    return (
+      <div style={{ padding: 40, textAlign: 'center', color: 'var(--pb-text3)' }}>
+        No statuses configured for this product. 
+        Please check product settings or try refreshing.
+      </div>
+    );
+  }
+
   return (
     <DndContext
       sensors={sensors}
@@ -129,6 +139,7 @@ export function ListView({
             productId={productId}
             orgId={orgId}
             onOpenDetail={onOpenDetail}
+            onAssign={onAssign}
             members={members}
             productStatuses={productStatuses}
             onStatusChange={handleStatusChange}

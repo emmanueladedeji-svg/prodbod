@@ -137,7 +137,43 @@ export interface Feature {
   updatedAt: Date;
 }
 
-export type FeatureStatus = 'backlog' | 'in_progress' | 'in_review' | 'done' | 'live';
+export type FeatureStatus = 
+  | 'idea' 
+  | 'discovery' 
+  | 'in_development' 
+  | 'in_testing' 
+  | 'live' 
+  | 'closed';
+
+export const FEATURE_STATUSES: Array<{
+  key: FeatureStatus;
+  label: string;
+  color: string;       // hex, used for chart segments and badges
+  bgColor: string;     // light bg for badge chips, e.g. '#F3F4F6'
+}> = [
+  { key: 'idea',           label: 'Idea / Problem',   color: '#8B5CF6', bgColor: '#EDE9FE' },
+  { key: 'discovery',      label: 'Discovery',         color: '#3B82F6', bgColor: '#DBEAFE' },
+  { key: 'in_development', label: 'In Development',    color: '#F59E0B', bgColor: '#FEF3C7' },
+  { key: 'in_testing',     label: 'In Testing',        color: '#EC4899', bgColor: '#FCE7F3' },
+  { key: 'live',           label: 'Live',              color: '#10B981', bgColor: '#D1FAE5' },
+  { key: 'closed',         label: 'Closed',            color: '#6B7280', bgColor: '#F3F4F6' },
+];
+
+export interface ProductRole {
+  userId: string;
+  name: string;        // display name from profiles table
+  initials: string;    // computed: first letter of first + last name
+  avatarColor: string; // deterministic color from userId hash
+}
+
+export interface FeatureWithAssignee {
+  id: string;
+  name: string;
+  status: FeatureStatus;
+  is_sub_feature: boolean;
+  parent_feature_id: string | null;
+  assignee: ProductRole | null;
+}
 
 export interface Task {
   id: string;

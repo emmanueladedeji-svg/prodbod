@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { Feature, useUpdateWorkspaceFeature } from '@/hooks/useWorkspaceFeatures';
 import { STATUSES, StatusKey, PRIORITY_CONFIG, ItemPriority } from '@/constants/statuses';
 import { StatusBadge } from './StatusBadge';
+import { ProdbodMember } from '@/hooks/useProdbodMembers';
 
 function fmtDateTime(d: string) {
   try {
@@ -10,6 +11,13 @@ function fmtDateTime(d: string) {
   } catch {
     return d;
   }
+}
+
+function avatarColor(s: string) {
+  const c = ['#3d6cff', '#7c3aed', '#0891b2', '#059669', '#d97706', '#dc2626', '#be185d'];
+  let h = 0;
+  for (const ch of (s || '')) h = (h * 31 + ch.charCodeAt(0)) % c.length;
+  return c[h];
 }
 
 interface FeatureDetailPanelProps {
@@ -20,9 +28,13 @@ interface FeatureDetailPanelProps {
   orgId: string;
   onClose: () => void;
   onOpenDetail: (f: Feature) => void;
+  onAssign: (featureId: string) => void;
+  members: ProdbodMember[];
 }
 
-export function FeatureDetailPanel({ feature, allFeatures, listId, productId, orgId, onClose, onOpenDetail }: FeatureDetailPanelProps) {
+export function FeatureDetailPanel({ 
+  feature, allFeatures, listId, productId, orgId, onClose, onOpenDetail, onAssign, members 
+}: FeatureDetailPanelProps) {
   const updateFeature = useUpdateWorkspaceFeature();
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState('');
@@ -230,6 +242,38 @@ export function FeatureDetailPanel({ feature, allFeatures, listId, productId, or
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Assignee */}
+          <div style={propRowStyle}>
+            <span style={propLabelStyle}>Assignee</span>
+            <div 
+              onClick={() => onAssign(feature.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+            >
+              {(() => {
+                const assignee = feature.assignee_id ? members.find(m => m.member_user_id === feature.assignee_id) : null;
+                if (!assignee) return <span style={{ fontSize: 13, color: 'var(--pb-text3)' }}>Unassigned</span>;
+                
+                const initials = assignee.profile 
+                  ? ((assignee.profile.first_name?.[0] || '') + (assignee.profile.last_name?.[0] || '')).toUpperCase()
+                  : (assignee.name || '?').substring(0, 2).toUpperCase();
+                
+                return (
+                  <>
+                    <div style={{
+                      width: 24, height: 24, borderRadius: '50%',
+                      background: avatarColor(assignee.name || assignee.email || ''),
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 10, fontWeight: 700, color: '#fff', fontFamily: "'Syne', sans-serif"
+                    }}>
+                      {initials}
+                    </div>
+                    <span style={{ fontSize: 13, color: 'var(--pb-text)' }}>{assignee.name || assignee.email}</span>
+                  </>
+                );
+              })()}
             </div>
           </div>
 
