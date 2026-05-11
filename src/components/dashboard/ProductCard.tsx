@@ -14,6 +14,7 @@ interface ProductCardProps {
   statusCounts: Record<FeatureStatus, number>;
   memberAvatars?: Array<{ initials: string; color: string }>;
   isActive: boolean;
+  canManage: boolean;
   onClick: () => void;
   onAssignRole: (role: 'pm' | 'lead_engineer') => void;
 }
@@ -26,15 +27,16 @@ function RoleBadge({
 }: {
   abbrev: string;
   person: ProductRole | null;
+  canManage: boolean;
   onClick: (e: React.MouseEvent) => void;
 }) {
   if (person) {
     return (
-      <div className="role-badge" onClick={onClick} style={{
+      <div className="role-badge" onClick={canManage ? onClick : undefined} style={{
         display: 'flex', alignItems: 'center', gap: 5,
         background: 'var(--pb-bg)', border: '1px solid var(--pb-border)',
         borderRadius: 99, padding: '3px 8px 3px 4px', fontSize: 11,
-        color: 'var(--pb-text2)', cursor: 'pointer', transition: 'border-color .15s',
+        color: 'var(--pb-text2)', cursor: canManage ? 'pointer' : 'default', transition: 'border-color .15s',
       }}>
         <div style={{
           width: 18, height: 18, borderRadius: '50%', fontSize: 8, fontWeight: 700,
@@ -47,14 +49,15 @@ function RoleBadge({
     );
   }
   return (
-    <div className="role-badge" onClick={onClick} style={{
+    <div className="role-badge" onClick={canManage ? onClick : undefined} style={{
       display: 'flex', alignItems: 'center', gap: 5,
       background: 'var(--pb-bg)', border: '1px dashed var(--pb-border)',
       borderRadius: 99, padding: '3px 8px 3px 4px', fontSize: 11,
-      color: 'var(--pb-text3)', cursor: 'pointer', transition: 'border-color .15s',
+      color: 'var(--pb-text3)', cursor: canManage ? 'pointer' : 'default', transition: 'border-color .15s',
+      opacity: canManage ? 1 : 0.6,
     }}>
-      <span style={{ fontSize: 12 }}>+</span>
-      <span>Assign {abbrev === 'PM' ? 'PM' : 'Lead Eng'}</span>
+      <span style={{ fontSize: 12 }}>{canManage ? '+' : ''}</span>
+      <span>{canManage ? `Assign ${abbrev === 'PM' ? 'PM' : 'Lead Eng'}` : (abbrev === 'PM' ? 'No PM' : 'No Lead Eng')}</span>
     </div>
   );
 }
@@ -65,6 +68,7 @@ export function ProductCard({
   statusCounts,
   memberAvatars = [],
   isActive,
+  canManage,
   onClick,
   onAssignRole,
 }: ProductCardProps) {
@@ -135,8 +139,8 @@ export function ProductCard({
 
       {/* Role badges */}
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-        <RoleBadge abbrev="PM" person={pm} onClick={e => { e.stopPropagation(); onAssignRole('pm'); }} />
-        <RoleBadge abbrev="ENG" person={leadEngineer} onClick={e => { e.stopPropagation(); onAssignRole('lead_engineer'); }} />
+        <RoleBadge abbrev="PM" person={pm} canManage={canManage} onClick={e => { e.stopPropagation(); onAssignRole('pm'); }} />
+        <RoleBadge abbrev="ENG" person={leadEngineer} canManage={canManage} onClick={e => { e.stopPropagation(); onAssignRole('lead_engineer'); }} />
       </div>
 
       {/* Mini status bar */}

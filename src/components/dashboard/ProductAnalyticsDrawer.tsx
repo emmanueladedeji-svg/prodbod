@@ -14,6 +14,7 @@ interface ProductAnalyticsDrawerProps {
   productName?: string;
   productDescription?: string | null;
   onClose: () => void;
+  canManage: boolean;
   onAssignRole: (productId: string, role: 'pm' | 'lead_engineer') => void;
   onAssignFeature: (featureId: string) => void;
 }
@@ -50,15 +51,16 @@ function DrawerRolePill({
 }: {
   roleLabel: string;
   person: { name: string; initials: string; avatarColor: string } | null;
+  canManage: boolean;
   onClick: () => void;
 }) {
   if (person) {
     return (
-      <div onClick={onClick} style={{
+      <div onClick={canManage ? onClick : undefined} style={{
         display: 'flex', alignItems: 'center', gap: 7,
         background: 'var(--pb-bg)', border: '1px solid var(--pb-border)',
         borderRadius: 99, padding: '5px 12px 5px 6px', fontSize: 12,
-        cursor: 'pointer', transition: 'border-color .15s',
+        cursor: canManage ? 'pointer' : 'default', transition: 'border-color .15s',
         fontFamily: "'DM Sans', sans-serif",
       }}
         onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-gold)'}
@@ -77,24 +79,25 @@ function DrawerRolePill({
     );
   }
   return (
-    <div onClick={onClick} style={{
+    <div onClick={canManage ? onClick : undefined} style={{
       display: 'flex', alignItems: 'center', gap: 7,
       background: 'var(--pb-bg)', border: '1px dashed var(--pb-border)',
       borderRadius: 99, padding: '5px 12px 5px 6px', fontSize: 12,
-      cursor: 'pointer', color: 'var(--pb-text3)', transition: 'border-color .15s',
+      cursor: canManage ? 'pointer' : 'default', color: 'var(--pb-text3)', transition: 'border-color .15s',
       fontFamily: "'DM Sans', sans-serif",
+      opacity: canManage ? 1 : 0.6,
     }}
-      onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-gold)'}
-      onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-border)'}
+      onMouseEnter={e => canManage && (e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-gold)'}
+      onMouseLeave={e => canManage && (e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-border)'}
     >
       <div style={{
         width: 22, height: 22, borderRadius: '50%',
         background: 'var(--pb-border)', color: 'var(--pb-text3)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12,
-      }}>+</div>
+      }}>{canManage ? '+' : ''}</div>
       <div>
         <span style={{ display: 'block', fontSize: 10, color: 'var(--pb-text3)', fontWeight: 500, lineHeight: 1 }}>{roleLabel}</span>
-        <span style={{ fontWeight: 500, lineHeight: 1, color: 'var(--pb-text3)' }}>Assign</span>
+        <span style={{ fontWeight: 500, lineHeight: 1, color: 'var(--pb-text3)' }}>{canManage ? 'Assign' : 'Not assigned'}</span>
       </div>
     </div>
   );
@@ -106,6 +109,7 @@ export function ProductAnalyticsDrawer({
   productName,
   productDescription,
   onClose,
+  canManage,
   onAssignRole,
   onAssignFeature,
 }: ProductAnalyticsDrawerProps) {
@@ -169,8 +173,8 @@ export function ProductAnalyticsDrawer({
 
       {/* ── Role pills ── */}
       <div style={{ display: 'flex', gap: 10, padding: '14px 28px', borderBottom: '1px solid var(--pb-border)', flexShrink: 0 }}>
-        <DrawerRolePill roleLabel="Product Manager" person={pm} onClick={() => productId && onAssignRole(productId, 'pm')} />
-        <DrawerRolePill roleLabel="Lead Engineer" person={leadEngineer} onClick={() => productId && onAssignRole(productId, 'lead_engineer')} />
+        <DrawerRolePill roleLabel="Product Manager" person={pm} canManage={canManage} onClick={() => productId && onAssignRole(productId, 'pm')} />
+        <DrawerRolePill roleLabel="Lead Engineer" person={leadEngineer} canManage={canManage} onClick={() => productId && onAssignRole(productId, 'lead_engineer')} />
       </div>
 
       {/* ── Time filter pills ── */}
@@ -412,17 +416,18 @@ export function ProductAnalyticsDrawer({
                         >{feature.assignee.initials}</div>
                       ) : (
                         <div
-                          onClick={() => onAssignFeature(feature.id)}
+                          onClick={() => canManage && onAssignFeature(feature.id)}
                           style={{
                             width: 24, height: 24, borderRadius: '50%',
                             border: '1.5px dashed var(--pb-border)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: 'var(--pb-text3)', fontSize: 13, cursor: 'pointer',
+                            color: 'var(--pb-text3)', fontSize: 13, cursor: canManage ? 'pointer' : 'default',
                             transition: 'border-color .15s, color .15s',
+                            opacity: canManage ? 1 : 0.6,
                           }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-gold)'; (e.currentTarget as HTMLElement).style.color = 'var(--pb-gold)'; }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-border)'; (e.currentTarget as HTMLElement).style.color = 'var(--pb-text3)'; }}
-                        >+</div>
+                          onMouseEnter={e => canManage && ((e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-gold)', (e.currentTarget as HTMLElement).style.color = 'var(--pb-gold)')}
+                          onMouseLeave={e => canManage && ((e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-border)', (e.currentTarget as HTMLElement).style.color = 'var(--pb-text3)')}
+                        >{canManage ? '+' : ''}</div>
                       )}
                     </div>
                   </div>

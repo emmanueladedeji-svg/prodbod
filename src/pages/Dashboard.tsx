@@ -6,6 +6,7 @@ import { useMyOrgs } from '@/hooks/useProdbodOrgs';
 import { useAllProductStatusCounts } from '@/hooks/useAllProductStatusCounts';
 import { useProductRoles } from '@/hooks/useProductRoles';
 import { useUpdateWorkspaceFeature } from '@/hooks/useWorkspaceFeatures';
+import { useOrgPermissions } from '@/hooks/useOrgRole';
 import { ProductCard } from '@/components/dashboard/ProductCard';
 import { ProductAnalyticsDrawer } from '@/components/dashboard/ProductAnalyticsDrawer';
 import { PeoplePicker } from '@/components/dashboard/PeoplePicker';
@@ -74,6 +75,7 @@ export default function Dashboard() {
   const { data: members = [], isLoading: membersLoading } = useOrgMembersProdbod(currentOrgId);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const navigate = useNavigate();
+  const { isAdmin: canManage } = useOrgPermissions(currentOrgId);
 
   const [activeProductId, setActiveProductId] = useState<string | null>(null);
   const [pickerState, setPickerState] = useState<{
@@ -174,18 +176,20 @@ export default function Dashboard() {
         {/* Top bar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
           <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.4px' }}>Dashboard</h1>
-          <button 
-            onClick={() => navigate('/onboarding')}
-            style={{ 
-              background: 'var(--pb-text)', color: '#fff', border: 'none', borderRadius: 8, 
-              padding: '8px 16px', fontSize: 13, fontWeight: 500, fontFamily: "'DM Sans', sans-serif", 
-              cursor: 'pointer', transition: 'opacity .15s' 
-            }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '0.8'}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '1'}
-          >
-            + New organisation
-          </button>
+          {canManage && (
+            <button 
+              onClick={() => navigate('/onboarding')}
+              style={{ 
+                background: 'var(--pb-text)', color: '#fff', border: 'none', borderRadius: 8, 
+                padding: '8px 16px', fontSize: 13, fontWeight: 500, fontFamily: "'DM Sans', sans-serif", 
+                cursor: 'pointer', transition: 'opacity .15s' 
+              }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '0.8'}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '1'}
+            >
+              + New organisation
+            </button>
+          )}
         </div>
 
         {/* Stat cards */}
@@ -218,17 +222,19 @@ export default function Dashboard() {
         {/* Products section */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--pb-text)' }}>Products</div>
-          <button
-            onClick={() => setShowAddProduct(true)}
-            style={{
-              background: 'var(--pb-bg2)', border: '1px solid var(--pb-border)', borderRadius: 8,
-              padding: '7px 14px', fontSize: 12, fontWeight: 500,
-              fontFamily: "'DM Sans', sans-serif", cursor: 'pointer',
-              color: 'var(--pb-text)', transition: 'border-color .15s',
-            }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = '#aaa'}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-border)'}
-          >+ Add product</button>
+          {canManage && (
+            <button
+              onClick={() => setShowAddProduct(true)}
+              style={{
+                background: 'var(--pb-bg2)', border: '1px solid var(--pb-border)', borderRadius: 8,
+                padding: '7px 14px', fontSize: 12, fontWeight: 500,
+                fontFamily: "'DM Sans', sans-serif", cursor: 'pointer',
+                color: 'var(--pb-text)', transition: 'border-color .15s',
+              }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = '#aaa'}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-border)'}
+            >+ Add product</button>
+          )}
         </div>
 
         {productsLoading ? (
@@ -250,6 +256,7 @@ export default function Dashboard() {
                 statusCounts={statusCountsMap[product.id] ?? emptyStatusCounts}
                 memberAvatars={memberAvatarList}
                 isActive={activeProductId === product.id}
+                canManage={canManage}
                 onClick={() => setActiveProductId(product.id)}
                 onAssignRole={(role) => openPeoplePicker(product.id, role)}
               />
@@ -268,6 +275,7 @@ export default function Dashboard() {
         productName={activeProduct?.name}
         productDescription={activeProduct?.description}
         onClose={() => setActiveProductId(null)}
+        canManage={canManage}
         onAssignRole={(productId, role) => openPeoplePicker(productId, role)}
         onAssignFeature={(featureId) => {
           setPickerState({ isOpen: true, productId: null, role: 'feature', featureId, title: 'Assign Team Member' });

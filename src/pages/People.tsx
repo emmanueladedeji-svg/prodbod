@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { useMyOrgs } from '@/hooks/useProdbodOrgs';
 import { useOrgMembersProdbod, useInviteMembers, useUpdateMemberRole, useRemoveMember, useResendInvite, ProdbodMember } from '@/hooks/useProdbodMembers';
+import { useOrgPermissions } from '@/hooks/useOrgRole';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 
@@ -118,14 +119,8 @@ export default function People() {
   const [resendSentEmail, setResendSentEmail] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const myName = userProfile
-    ? `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim()
-    : '';
-
-  // Determine current user's role in this organization
-  const myMemberRecord = members.find(m => m.member_user_id === userProfile?.id);
-  const myRole = myMemberRecord?.role || 'Staff';
-  const canManage = myRole === 'Owner' || myRole === 'Team Lead'; // Team Lead is Admin
+  // Determine current user's role in this organization using the scoped hook
+  const { role: myRole, isAdmin: canManage } = useOrgPermissions(currentOrgId);
 
   const addEmailTag = useCallback((email: string) => {
     const trimmed = email.trim().replace(/,$/, '');
@@ -221,7 +216,7 @@ export default function People() {
         email,
         token: tokenToUse,
         orgName: org?.name || '',
-        inviterName: myName,
+        inviterName: `${userProfile?.first_name || ''} ${userProfile?.last_name || ''}`.trim() || userProfile?.id || '',
       });
 
       if (result?.success === false) {
