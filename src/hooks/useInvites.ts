@@ -34,7 +34,11 @@ export function useGetInviteByToken(token: string | null) {
       if (error) throw error;
       if (!data) return { invite: null, status: 'not_found' };
       if (data.accepted) return { invite: data as Invite, status: 'already_accepted' };
-      if (new Date(data.expires_at) < new Date()) return { invite: data as Invite, status: 'expired' };
+      
+      const expiry = new Date(data.expires_at).getTime();
+      const now = new Date().getTime();
+      
+      if (expiry < now) return { invite: data as Invite, status: 'expired' };
       return { invite: data as Invite, status: 'valid' };
     },
   });
