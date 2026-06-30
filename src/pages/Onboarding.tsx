@@ -146,7 +146,7 @@ export default function Onboarding() {
       const { data: { user } } = await supabase.auth.getUser();
       supabase.functions.invoke('send-welcome-email', {
         body: { 
-          email: savedProfile?.email || user?.email, 
+          email: user?.email,
           user_name: firstName || savedProfile?.first_name 
         }
       }).catch(e => console.error('Welcome email error:', e));

@@ -11,7 +11,23 @@ export function TopBar() {
 
   const isPeoplePage = location.pathname === '/people';
   const isDashboard = location.pathname === '/';
-  const pageTitle = isPeoplePage ? 'People' : 'Dashboard';
+
+  const pageTitles: Record<string, string> = {
+    '/': 'Dashboard',
+    '/people': 'People',
+    '/product-profile': 'Product Profile',
+    '/vision': 'Vision',
+    '/business-objectives': 'Business Objectives',
+    '/strategies': 'Strategies',
+    '/product-objectives': 'Product Objectives',
+    '/features': 'Features',
+    '/tasks': 'Tasks',
+    '/feedback': 'Feedback',
+    '/releases': 'Releases',
+    '/integrations': 'Integrations',
+    '/settings': 'Settings',
+  };
+  const pageTitle = pageTitles[location.pathname] ?? 'Dashboard';
 
   const focusInviteInput = () => {
     // People page invite input id

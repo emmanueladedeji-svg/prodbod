@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Users, Target, ChevronRight, ChevronLeft, LogOut, User } from 'lucide-react';
+import { Home, Users, ChevronRight, ChevronLeft, LogOut, User } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -149,20 +149,6 @@ export function IconRail({ sidebarOpen, onToggleSidebar }: IconRailProps) {
           )}
         </NavLink>
 
-        <NavLink to="/products" title="Products" style={{ textDecoration: 'none', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {({ isActive }) => (
-            <>
-              {isActive && <div style={{ position: 'absolute', left: -4, top: 4, bottom: 4, width: 3, borderRadius: '0 2px 2px 0', background: 'var(--pb-gold)' }} />}
-              <div
-                style={iconBtn(isActive)}
-                onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.color = 'var(--pb-text)'; } }}
-                onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.color = 'var(--pb-text3)'; } }}
-              >
-                <Target size={15} />
-              </div>
-            </>
-          )}
-        </NavLink>
       </div>
 
       {/* User avatar */}

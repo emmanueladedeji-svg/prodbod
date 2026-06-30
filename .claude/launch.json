@@ -3,10 +3,11 @@
   "configurations": [
     {
       "name": "prodbod",
-      "runtimeExecutable": "/Users/emmanueladedeji/Desktop/prodbod/node_modules/.bin/vite",
-      "runtimeArgs": ["--port", "5173"],
+      "runtimeExecutable": "/usr/local/bin/npm",
+      "runtimeArgs": ["--prefix", "/Users/emmanueladedeji/Desktop/prodbod", "run", "dev"],
       "cwd": "/Users/emmanueladedeji/Desktop/prodbod",
-      "port": 5173
+      "port": 5173,
+      "autoPort": false
     }
   ]
 }

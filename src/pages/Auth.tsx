@@ -108,7 +108,7 @@ export default function Auth() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'https://prodbod.vercel.app',
+          redirectTo: window.location.origin,
         },
       });
       if (error) throw error;
@@ -287,38 +287,36 @@ export default function Auth() {
               )}
 
               <form onSubmit={handleSignUp}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 0 }}>
-                  <div style={{ marginBottom: 14 }}>
-                    <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'var(--pb-text2)', marginBottom: 5, letterSpacing: '0.02em', textTransform: 'uppercase', fontFamily: "'Syne', sans-serif" }}>Email</label>
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'var(--pb-text2)', marginBottom: 5, letterSpacing: '0.02em', textTransform: 'uppercase', fontFamily: "'Syne', sans-serif" }}>Email</label>
+                  <input
+                    type="email"
+                    placeholder="you@company.com"
+                    value={suEmail}
+                    onChange={(e) => setSuEmail(e.target.value)}
+                    style={{ width: '100%', padding: '10px 13px', border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, color: 'var(--pb-text)', background: 'var(--pb-bg)', outline: 'none' }}
+                    required
+                  />
+                </div>
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'var(--pb-text2)', marginBottom: 5, letterSpacing: '0.02em', textTransform: 'uppercase', fontFamily: "'Syne', sans-serif" }}>Password</label>
+                  <div style={{ position: 'relative' }}>
                     <input
-                      type="email"
-                      placeholder="you@company.com"
-                      value={suEmail}
-                      onChange={(e) => setSuEmail(e.target.value)}
-                      style={{ width: '100%', padding: '10px 13px', border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, color: 'var(--pb-text)', background: 'var(--pb-bg)', outline: 'none' }}
+                      type={showSuPassword ? "text" : "password"}
+                      placeholder="Min. 8 characters"
+                      value={suPassword}
+                      onChange={(e) => setSuPassword(e.target.value)}
+                      style={{ width: '100%', padding: '10px 13px', paddingRight: 40, border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, color: 'var(--pb-text)', background: 'var(--pb-bg)', outline: 'none' }}
                       required
+                      minLength={8}
                     />
-                  </div>
-                  <div style={{ marginBottom: 14 }}>
-                    <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'var(--pb-text2)', marginBottom: 5, letterSpacing: '0.02em', textTransform: 'uppercase', fontFamily: "'Syne', sans-serif" }}>Password</label>
-                    <div style={{ position: 'relative' }}>
-                      <input
-                        type={showSuPassword ? "text" : "password"}
-                        placeholder="Min. 8 characters"
-                        value={suPassword}
-                        onChange={(e) => setSuPassword(e.target.value)}
-                        style={{ width: '100%', padding: '10px 13px', paddingRight: 40, border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-r)', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, color: 'var(--pb-text)', background: 'var(--pb-bg)', outline: 'none' }}
-                        required
-                        minLength={8}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowSuPassword(!showSuPassword)}
-                        style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--pb-text3)', display: 'flex', alignItems: 'center' }}
-                      >
-                        {showSuPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowSuPassword(!showSuPassword)}
+                      style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--pb-text3)', display: 'flex', alignItems: 'center' }}
+                    >
+                      {showSuPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
                   </div>
                 </div>
                 <button

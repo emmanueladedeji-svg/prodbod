@@ -197,6 +197,7 @@ export function ProductSidebar({ isOpen, onClose, onAddProduct }: ProductSidebar
               <SidebarProductItem
                 key={product.id}
                 product={product}
+                orgId={currentOrgId!}
                 onNavigate={onClose}
               />
             ))

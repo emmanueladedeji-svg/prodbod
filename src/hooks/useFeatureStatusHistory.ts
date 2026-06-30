@@ -30,7 +30,7 @@ export function useFeatureStatusHistory(
         interval = 'month'; // Year view shows quarters or months
       }
 
-      // 1. Fetch snapshots
+      // 1. Fetch snapshots (table may not exist — swallow the error and fall back to live feature data)
       const { data: snapshots, error } = await supabase
         .from('feature_status_snapshots')
         .select('*')
@@ -38,7 +38,10 @@ export function useFeatureStatusHistory(
         .gte('snapshot_date', startDate.toISOString())
         .order('snapshot_date', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        // Table missing or RLS denied — silently fall back to currentFeatures below
+        console.warn('feature_status_snapshots unavailable:', error.message);
+      }
 
       // 2. Fetch current status AND creation date for all features
       const { data: currentFeatures, error: cfError } = await (supabase as any)

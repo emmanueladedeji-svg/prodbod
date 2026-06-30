@@ -219,6 +219,7 @@ export default function AcceptInvite() {
 
     if (!firstName.trim() || !lastName.trim()) { setError('Please enter your first and last name.'); return; }
     if (!hasMagicLinkSession && password.length < 8) { setError('Password must be at least 8 characters.'); return; }
+    if (hasMagicLinkSession && password.length > 0 && password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     if (!jobRole) { setError('Please select your job role.'); return; }
 
     const finalRole = jobRole === 'Other' ? (otherRole.trim() || 'Other') : jobRole;
@@ -229,9 +230,11 @@ export default function AcceptInvite() {
 
       if (hasMagicLinkSession) {
         // User already authenticated (magic link or previous attempt)
-        // Ensure they have the password they just typed
-        const { error: updateErr } = await supabase.auth.updateUser({ password });
-        if (updateErr) throw updateErr;
+        // Only update password if the user provided one
+        if (password.length >= 8) {
+          const { error: updateErr } = await supabase.auth.updateUser({ password });
+          if (updateErr) throw updateErr;
+        }
         userId = existingSession!.user.id;
       } else {
         // Try sign in first (handles existing accounts sharing links)
@@ -394,16 +397,16 @@ export default function AcceptInvite() {
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>{hasMagicLinkSession ? 'Confirm password' : 'Create password'}</label>
+            <label style={labelStyle}>{hasMagicLinkSession ? 'Set a password (optional)' : 'Create password'}</label>
             <div style={{ position: 'relative' }}>
               <input
                 type={showPassword ? "text" : "password"}
                 style={{ ...inputStyle, paddingRight: 40 }}
-                placeholder="Min. 8 characters"
+                placeholder={hasMagicLinkSession ? 'Leave blank to skip' : 'Min. 8 characters'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={8}
+                required={!hasMagicLinkSession}
+                minLength={hasMagicLinkSession ? undefined : 8}
               />
               <button
                 type="button"
