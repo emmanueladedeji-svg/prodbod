@@ -2,10 +2,11 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "ProdBod Dev",
-      "runtimeExecutable": "/usr/local/bin/node",
-      "runtimeArgs": ["/Users/emmanueladedeji/Desktop/prodbod/node_modules/.bin/vite", "--port", "8080", "--force"],
-      "port": 8080
+      "name": "prodbod",
+      "runtimeExecutable": "/Users/emmanueladedeji/Desktop/prodbod/node_modules/.bin/vite",
+      "runtimeArgs": ["--port", "5173"],
+      "cwd": "/Users/emmanueladedeji/Desktop/prodbod",
+      "port": 5173
     }
   ]
 }

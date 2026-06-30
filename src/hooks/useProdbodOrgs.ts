@@ -25,7 +25,8 @@ export function useMyOrgs() {
   return useQuery({
     queryKey: ['my-orgs'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return [];
 
       // Orgs owned by the user
@@ -71,7 +72,8 @@ export function useCreateProdbodOrg() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: CreateOrgData) => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) throw new Error('Not authenticated');
 
       const { data: org, error } = await supabase

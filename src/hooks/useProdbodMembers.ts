@@ -79,7 +79,8 @@ export function useInviteMembers(orgId: string | null) {
   return useMutation({
     mutationFn: async (emails: string[]): Promise<{ email: string; token: string; emailSent: boolean; emailError?: string }[]> => {
       if (!orgId) throw new Error('No org selected');
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) throw new Error('Not authenticated');
 
       // Fetch inviter name + org name once
@@ -104,7 +105,7 @@ export function useInviteMembers(orgId: string | null) {
       for (const email of emails) {
         let inviteToken: string;
 
-        // Duplicate check: reuse an existing non-expired, non-accepted invite
+        // Reuse an existing non-expired, non-accepted invite if present
         const { data: existingInvite } = await supabase
           .from('invites')
           .select('id, token')
@@ -127,29 +128,37 @@ export function useInviteMembers(orgId: string | null) {
             .single();
           if (inviteError) throw inviteError;
           inviteToken = invite.token;
+        }
 
-          // Create pending member row only if not already present
-          const { data: existingMember } = await supabase
+        // Always ensure a Pending member row exists — regardless of whether the invite
+        // was new or reused (the row may have been deleted or never created on a prior attempt)
+        const { data: existingMember } = await supabase
+          .from('organization_members')
+          .select('id, status')
+          .eq('organization_id', orgId)
+          .eq('email', email)
+          .maybeSingle();
+
+        if (!existingMember) {
+          const { error: memError } = await supabase
             .from('organization_members')
-            .select('id')
+            .insert({
+              organization_id: orgId,
+              name: email,
+              email,
+              role: 'Staff',
+              status: 'Pending',
+              invited_by: inviterName,
+              invited_on: new Date().toISOString(),
+            });
+          if (memError) throw memError;
+        } else if (existingMember.status === 'Removed') {
+          // Re-activate a previously removed member as Pending
+          await supabase
+            .from('organization_members')
+            .update({ status: 'Pending', invited_on: new Date().toISOString(), invited_by: inviterName })
             .eq('organization_id', orgId)
-            .eq('email', email)
-            .maybeSingle();
-
-          if (!existingMember) {
-            const { error: memError } = await supabase
-              .from('organization_members')
-              .insert({
-                organization_id: orgId,
-                name: email,
-                email,
-                role: 'Staff',
-                status: 'Pending',
-                invited_by: inviterName,
-                invited_on: new Date().toISOString(),
-              });
-            if (memError) throw memError;
-          }
+            .eq('email', email);
         }
 
         // Send email via edge function

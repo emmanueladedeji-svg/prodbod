@@ -27,7 +27,8 @@ export function useUserProfile() {
     queryKey: ['user-profile'],
     staleTime: 0,
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return null;
       const { data, error } = await supabase
         .from('user_profiles')
@@ -44,7 +45,8 @@ export function useUpsertUserProfile() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (profileData: UpsertProfileData) => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) throw new Error('Not authenticated');
       const { data, error } = await supabase
         .from('user_profiles')

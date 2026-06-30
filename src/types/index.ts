@@ -160,10 +160,10 @@ export const FEATURE_STATUSES: Array<{
 ];
 
 export interface ProductRole {
-  userId: string;
-  name: string;        // display name from profiles table
-  initials: string;    // computed: first letter of first + last name
-  avatarColor: string; // deterministic color from userId hash
+  userId: string | null;
+  name: string;
+  initials: string;
+  avatarColor: string;
 }
 
 export interface FeatureWithAssignee {

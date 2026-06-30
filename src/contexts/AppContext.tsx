@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ViewMode } from '@/types';
-import { useOrganizations, DbOrganization } from '@/hooks/useOrganizations';
+import { useMyOrgs, ProdbodOrg as DbOrganization } from '@/hooks/useProdbodOrgs';
 import { useProducts, DbProduct } from '@/hooks/useProducts';
 import { useUserProfile, UserProfile } from '@/hooks/useUserProfile';
 
@@ -53,7 +53,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  const { data: organizations = [], isLoading: organizationsLoading } = useOrganizations();
+  const { data: organizations = [], isLoading: organizationsLoading } = useMyOrgs();
   const { data: products = [], isLoading: productsLoading } = useProducts(currentOrganization?.id);
   const { data: userProfile = null, isLoading: userProfileLoading } = useUserProfile();
 

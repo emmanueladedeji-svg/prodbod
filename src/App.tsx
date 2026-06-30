@@ -8,6 +8,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useMyOrgs } from "@/hooks/useProdbodOrgs";
+import { useInactivityTimeout } from "@/hooks/useInactivityTimeout";
 import { Loader2 } from "lucide-react";
 
 import Auth from "./pages/Auth";
@@ -29,7 +30,15 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import ProductWorkspace from "./pages/ProductWorkspace";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      retryDelay: 1000,
+      staleTime: 30_000,
+    },
+  },
+});
 
 function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const { data: profile, isLoading: profileLoading } = useUserProfile();
@@ -43,21 +52,18 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Needs onboarding if: no profile yet, OR onboarding not explicitly completed.
-  // If they've completed onboarding but have no orgs, they'll see an empty state in the app 
-  // rather than being forced to create a NEW organization.
-  if (!profileLoading && !orgsLoading) {
-    if (!profile || !profile.onboarding_completed) {
-      // If we are already on onboarding page, don't redirect
-      if (window.location.pathname === '/onboarding') return <>{children}</>;
-      return <Navigate to="/onboarding" replace />;
-    }
+  // Send to onboarding if: no profile, onboarding not completed, or no orgs yet
+  if (!profile || !profile.onboarding_completed || orgs.length === 0) {
+    if (window.location.pathname === '/onboarding') return <>{children}</>;
+    return <Navigate to="/onboarding" replace />;
   }
+
   return <>{children}</>;
 }
 
 function ProtectedRoutes() {
   const { session, loading } = useAuth();
+  useInactivityTimeout(!!session);
 
   if (loading) {
     return (

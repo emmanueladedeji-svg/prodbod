@@ -47,6 +47,7 @@ function ChartTooltip({ active, payload }: any) {
 function DrawerRolePill({
   roleLabel,
   person,
+  canManage,
   onClick,
 }: {
   roleLabel: string;
@@ -87,8 +88,8 @@ function DrawerRolePill({
       fontFamily: "'DM Sans', sans-serif",
       opacity: canManage ? 1 : 0.6,
     }}
-      onMouseEnter={e => canManage && (e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-gold)'}
-      onMouseLeave={e => canManage && (e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-border)'}
+      onMouseEnter={e => { if (canManage) (e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-gold)'; }}
+      onMouseLeave={e => { if (canManage) (e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-border)'; }}
     >
       <div style={{
         width: 22, height: 22, borderRadius: '50%',
@@ -425,8 +426,8 @@ export function ProductAnalyticsDrawer({
                             transition: 'border-color .15s, color .15s',
                             opacity: canManage ? 1 : 0.6,
                           }}
-                          onMouseEnter={e => canManage && ((e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-gold)', (e.currentTarget as HTMLElement).style.color = 'var(--pb-gold)')}
-                          onMouseLeave={e => canManage && ((e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-border)', (e.currentTarget as HTMLElement).style.color = 'var(--pb-text3)')}
+                          onMouseEnter={e => { if (canManage) { (e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-gold)'; (e.currentTarget as HTMLElement).style.color = 'var(--pb-gold)'; } }}
+                          onMouseLeave={e => { if (canManage) { (e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-border)'; (e.currentTarget as HTMLElement).style.color = 'var(--pb-text3)'; } }}
                         >{canManage ? '+' : ''}</div>
                       )}
                     </div>
