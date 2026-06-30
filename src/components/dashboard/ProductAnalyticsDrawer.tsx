@@ -22,6 +22,7 @@ interface ProductAnalyticsDrawerProps {
 /* ── Tooltip for the stacked bar chart ─────────────────────────────────────── */
 function ChartTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
+  const periodTotal = payload.reduce((sum: number, p: any) => sum + (p.value || 0), 0);
   return (
     <div style={{
       background: 'var(--pb-text)', color: '#fff', borderRadius: 8,
@@ -32,13 +33,20 @@ function ChartTooltip({ active, payload }: any) {
       {FEATURE_STATUSES.map(s => {
         const val = payload.find((p: any) => p.dataKey === s.key)?.value;
         if (!val) return null;
+        const pct = periodTotal > 0 ? ((val / periodTotal) * 100).toFixed(1) : '0.0';
         return (
           <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 6, lineHeight: 1.7 }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
             {s.label}: <strong>{val}</strong>
+            <span style={{ opacity: 0.7, fontFamily: "'DM Mono', monospace" }}>({pct}%)</span>
           </div>
         );
       })}
+      {periodTotal > 0 && (
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.15)', marginTop: 4, paddingTop: 4, opacity: 0.7 }}>
+          Total: <strong>{periodTotal}</strong>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,6 +2,18 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { FeatureStatus } from '@/types';
 
+// Maps the workspace_features.status enum directly to our FeatureStatus key.
+// The status enum is NOT NULL with a default, so this is always reliable.
+function mapStatusFromEnum(enumVal: string): FeatureStatus | null {
+  if (enumVal === 'idea_or_problem') return 'idea';
+  if (enumVal === 'discovery' || enumVal === 'prototyping') return 'discovery';
+  if (enumVal === 'in_development') return 'in_development';
+  if (enumVal === 'in_testing') return 'in_testing';
+  if (enumVal === 'live') return 'live';
+  if (enumVal === 'closed') return 'closed';
+  return null;
+}
+
 export function useFeatureStatusCounts(productId: string | null) {
   return useQuery({
     queryKey: ['feature-status-counts', productId],
@@ -16,50 +28,19 @@ export function useFeatureStatusCounts(productId: string | null) {
         closed: 0,
       };
 
-      const mapStatus = (name: string): FeatureStatus | null => {
-        const n = name.toLowerCase();
-        if (n.includes('idea') || n.includes('problem')) return 'idea';
-        if (n.includes('discovery')) return 'discovery';
-        if (n.includes('prototyping')) return 'discovery';
-        if (n.includes('development')) return 'in_development';
-        if (n.includes('testing')) return 'in_testing';
-        if (n.includes('live')) return 'live';
-        if (n.includes('closed')) return 'closed';
-        return null;
-      };
-
       try {
+        // Query the raw status enum — always populated, no join required
         const { data, error } = await (supabase as any)
           .from('workspace_features')
-          .select(`
-            id,
-            product_statuses (
-              name
-            )
-          `)
+          .select('id, status')
           .eq('product_id', productId!)
           .neq('level', 'task');
 
-        let finalData = data;
-        if (error) {
-          console.warn('Primary count query failed, trying fallback:', error);
-          const { data: fallbackData } = await (supabase as any)
-            .from('workspace_features')
-            .select('id, product_statuses(name)')
-            .eq('product_id', productId!)
-            .neq('level', 'task');
-          finalData = fallbackData;
-        }
+        if (error) throw error;
 
-        (finalData || []).forEach((f: any) => {
-          // Robustly get the status name from either the joined object or array
-          const statusObj = f.product_statuses;
-          const statusName = Array.isArray(statusObj) ? statusObj[0]?.name : statusObj?.name;
-          
-          const mappedStatus = statusName ? mapStatus(statusName) : null;
-          if (mappedStatus) {
-            counts[mappedStatus]++;
-          }
+        (data || []).forEach((f: any) => {
+          const mappedStatus = mapStatusFromEnum(f.status);
+          if (mappedStatus) counts[mappedStatus]++;
         });
       } catch (err) {
         console.error('Error in useFeatureStatusCounts:', err);

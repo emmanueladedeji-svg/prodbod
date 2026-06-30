@@ -1,7 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { FeatureStatus, FEATURE_STATUSES } from '@/types';
-import { format, subWeeks, subMonths, subQuarters, startOfWeek, startOfMonth, startOfQuarter, startOfToday } from 'date-fns';
+import { FeatureStatus } from '@/types';
+import { format, subWeeks, subMonths, subQuarters, startOfWeek, startOfToday } from 'date-fns';
+
+function mapStatusFromEnum(enumVal: string): FeatureStatus | null {
+  if (enumVal === 'idea_or_problem') return 'idea';
+  if (enumVal === 'discovery' || enumVal === 'prototyping') return 'discovery';
+  if (enumVal === 'in_development') return 'in_development';
+  if (enumVal === 'in_testing') return 'in_testing';
+  if (enumVal === 'live') return 'live';
+  if (enumVal === 'closed') return 'closed';
+  return null;
+}
 
 export function useFeatureStatusHistory(
   productId: string | null,
@@ -14,82 +24,59 @@ export function useFeatureStatusHistory(
     queryFn: async () => {
       let startDate: Date;
       let dataPoints: number;
-      let interval: 'day' | 'week' | 'month';
 
       if (period === 'week') {
         startDate = subWeeks(referenceDate, 4);
         dataPoints = 4;
-        interval = 'week';
       } else if (period === 'month') {
         startDate = subMonths(referenceDate, 6);
         dataPoints = 6;
-        interval = 'month';
       } else {
         startDate = subQuarters(referenceDate, 4);
         dataPoints = 4;
-        interval = 'month'; // Year view shows quarters or months
       }
 
-      // 1. Fetch snapshots (table may not exist — swallow the error and fall back to live feature data)
-      const { data: snapshots, error } = await supabase
+      // 1. Fetch snapshots (table may not exist — swallow error and fall back to live data)
+      const { data: snapshots, error: snapError } = await supabase
         .from('feature_status_snapshots')
         .select('*')
         .eq('product_id', productId!)
         .gte('snapshot_date', startDate.toISOString())
         .order('snapshot_date', { ascending: true });
 
-      if (error) {
-        // Table missing or RLS denied — silently fall back to currentFeatures below
-        console.warn('feature_status_snapshots unavailable:', error.message);
+      if (snapError) {
+        console.warn('feature_status_snapshots unavailable:', snapError.message);
       }
 
-      // 2. Fetch current status AND creation date for all features
+      // 2. Fetch current status + creation date using the reliable status enum column
       const { data: currentFeatures, error: cfError } = await (supabase as any)
         .from('workspace_features')
-        .select(`
-          id,
-          created_at,
-          product_statuses (
-            name
-          )
-        `)
+        .select('id, status, created_at')
         .eq('product_id', productId!)
         .neq('level', 'task');
 
-      if (cfError) console.error('Error fetching current features for history:', cfError);
+      if (cfError) console.error('Error fetching features for history:', cfError);
 
-      const mapStatus = (name: string): FeatureStatus | null => {
-        const n = name.toLowerCase();
-        if (n.includes('idea') || n.includes('problem')) return 'idea';
-        if (n.includes('discovery') || n.includes('prototyping')) return 'discovery';
-        if (n.includes('development')) return 'in_development';
-        if (n.includes('testing')) return 'in_testing';
-        if (n.includes('live')) return 'live';
-        if (n.includes('closed')) return 'closed';
-        return null;
-      };
+      const emptyPoint = (): Record<FeatureStatus, number> => ({
+        idea: 0, discovery: 0, in_development: 0, in_testing: 0, live: 0, closed: 0,
+      });
 
-      const result: Array<{ label: string, counts: Record<FeatureStatus, number> }> = [];
-      const today = startOfToday(); // Use today as cutoff
+      const result: Array<{ label: string; counts: Record<FeatureStatus, number> }> = [];
+      const today = startOfToday();
 
-      // 3. Generate data points based on period
       if (period === 'week') {
         const year = referenceDate.getFullYear();
         const month = referenceDate.getMonth();
         const monthStart = new Date(year, month, 1);
-        
-        // Generate 4-5 weeks for the month of the referenceDate
         let weekStart = startOfWeek(monthStart);
+
         for (let i = 0; i < 5; i++) {
           const targetDate = weekStart;
-          if (targetDate.getMonth() !== month && i > 0) break; // Stop if we've left the month
+          if (targetDate.getMonth() !== month && i > 0) break;
 
           const label = `W${i + 1}`;
           const isFuture = targetDate > today;
-          
-          const pointCounts: Record<FeatureStatus, number> = {
-            idea: 0, discovery: 0, in_development: 0, in_testing: 0, live: 0, closed: 0
-          };
+          const pointCounts = emptyPoint();
 
           if (!isFuture) {
             const dateStr = targetDate.toISOString().split('T')[0];
@@ -101,22 +88,19 @@ export function useFeatureStatusHistory(
               });
             } else {
               (currentFeatures || []).forEach((f: any) => {
-                const createdAt = new Date(f.created_at);
-                if (createdAt <= targetDate) {
-                  const statusObj = f.product_statuses;
-                  const statusName = Array.isArray(statusObj) ? statusObj[0]?.name : statusObj?.name;
-                  const mappedStatus = statusName ? mapStatus(statusName) : null;
-                  if (mappedStatus) pointCounts[mappedStatus]++;
+                if (new Date(f.created_at) <= targetDate) {
+                  const mapped = mapStatusFromEnum(f.status);
+                  if (mapped) pointCounts[mapped]++;
                 }
               });
             }
           }
+
           result.push({ label, counts: pointCounts });
           weekStart = new Date(weekStart);
           weekStart.setDate(weekStart.getDate() + 7);
         }
       } else {
-        // Monthly and Yearly periods
         for (let i = 0; i < dataPoints; i++) {
           let label = '';
           let targetDate: Date;
@@ -126,13 +110,11 @@ export function useFeatureStatusHistory(
             label = format(targetDate, 'MMM');
           } else {
             targetDate = subQuarters(referenceDate, dataPoints - 1 - i);
-            label = `Q${(Math.floor(targetDate.getMonth() / 3) + 1)} ${format(targetDate, 'yy')}`;
+            label = `Q${Math.floor(targetDate.getMonth() / 3) + 1} ${format(targetDate, 'yy')}`;
           }
 
           const isFuture = targetDate > today;
-          const pointCounts: Record<FeatureStatus, number> = {
-            idea: 0, discovery: 0, in_development: 0, in_testing: 0, live: 0, closed: 0
-          };
+          const pointCounts = emptyPoint();
 
           if (!isFuture) {
             const dateStr = targetDate.toISOString().split('T')[0];
@@ -144,21 +126,19 @@ export function useFeatureStatusHistory(
               });
             } else {
               (currentFeatures || []).forEach((f: any) => {
-                const createdAt = new Date(f.created_at);
-                if (createdAt <= targetDate) {
-                  const statusObj = f.product_statuses;
-                  const statusName = Array.isArray(statusObj) ? statusObj[0]?.name : statusObj?.name;
-                  const mappedStatus = statusName ? mapStatus(statusName) : null;
-                  if (mappedStatus) pointCounts[mappedStatus]++;
+                if (new Date(f.created_at) <= targetDate) {
+                  const mapped = mapStatusFromEnum(f.status);
+                  if (mapped) pointCounts[mapped]++;
                 }
               });
             }
           }
+
           result.push({ label, counts: pointCounts });
         }
       }
 
       return result;
-    }
+    },
   });
 }
