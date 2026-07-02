@@ -133,6 +133,91 @@ export type Database = {
           },
         ]
       }
+      feature_activity: {
+        Row: {
+          id: string
+          feature_id: string
+          user_id: string
+          type: string
+          body: string | null
+          field_name: string | null
+          old_value: string | null
+          new_value: string | null
+          mentioned_user_ids: string[] | null
+          created_at: string
+          updated_at: string | null
+          is_deleted: boolean
+        }
+        Insert: {
+          id?: string
+          feature_id: string
+          user_id: string
+          type: string
+          body?: string | null
+          field_name?: string | null
+          old_value?: string | null
+          new_value?: string | null
+          mentioned_user_ids?: string[] | null
+          created_at?: string
+          updated_at?: string | null
+          is_deleted?: boolean
+        }
+        Update: {
+          id?: string
+          feature_id?: string
+          user_id?: string
+          type?: string
+          body?: string | null
+          field_name?: string | null
+          old_value?: string | null
+          new_value?: string | null
+          mentioned_user_ids?: string[] | null
+          created_at?: string
+          updated_at?: string | null
+          is_deleted?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_feature_activity_feature"
+            columns: ["feature_id"]
+            isOneToOne: false
+            referencedRelation: "features"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feature_assignees: {
+        Row: {
+          id: string
+          feature_id: string
+          user_id: string
+          assigned_at: string
+          assigned_by: string | null
+        }
+        Insert: {
+          id?: string
+          feature_id: string
+          user_id: string
+          assigned_at?: string
+          assigned_by?: string | null
+        }
+        Update: {
+          id?: string
+          feature_id?: string
+          user_id?: string
+          assigned_at?: string
+          assigned_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_feature_assignees_feature"
+            columns: ["feature_id"]
+            isOneToOne: false
+            referencedRelation: "features"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feature_comments: {
         Row: {
           author_name: string

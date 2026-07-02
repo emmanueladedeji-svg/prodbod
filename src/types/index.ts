@@ -202,6 +202,47 @@ export interface Attachment {
   uploadedAt: Date;
 }
 
+// ─── Feature detail — effort sizing ──────────────────────────────────────────
+export type EffortSize = 'XS' | 'S' | 'M' | 'L' | 'XL';
+
+export const EFFORT_SIZES: Array<{
+  value: EffortSize;
+  label: string;
+  points: number;
+}> = [
+  { value: 'XS', label: 'XS', points: 1 },
+  { value: 'S',  label: 'S',  points: 2 },
+  { value: 'M',  label: 'M',  points: 3 },
+  { value: 'L',  label: 'L',  points: 5 },
+  { value: 'XL', label: 'XL', points: 8 },
+];
+
+// ─── Feature detail — lifecycle stages ───────────────────────────────────────
+// These map the features.status values to human-readable stage names.
+// The order here defines the left-to-right lifecycle strip order.
+export const FEATURE_LIFECYCLE_STAGES: Array<{
+  statusValue: string; // exact value stored in features.status
+  label: string;
+}> = [
+  { statusValue: 'backlog',     label: 'Backlog'   },
+  { statusValue: 'in_progress', label: 'Discovery' },
+  { statusValue: 'in_review',   label: 'Dev'       },
+  { statusValue: 'done',        label: 'Testing'   },
+  // 'Live' is represented by status = 'done' with a done task — kept as a
+  // visual terminal stage in the strip even though there is no separate DB value.
+];
+
+// ─── Feature detail — activity feed ──────────────────────────────────────────
+export type ActivityType =
+  | 'comment'
+  | 'status_change'
+  | 'assignee_change'
+  | 'field_change'
+  | 'created'
+  | 'sub_feature_added'
+  | 'task_added'
+  | 'feedback_linked';
+
 export interface TestCase {
   id: string;
   featureId: string;
