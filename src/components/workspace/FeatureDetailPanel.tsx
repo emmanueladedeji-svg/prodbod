@@ -1,13 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Send } from 'lucide-react';
+import { X, Send, ChevronRight, Plus } from 'lucide-react';
 import { Feature, useUpdateWorkspaceFeature } from '@/hooks/useWorkspaceFeatures';
-import { STATUSES, StatusKey, PRIORITY_CONFIG, ItemPriority } from '@/constants/statuses';
+import { STATUSES, StatusKey, PRIORITY_CONFIG, ItemPriority, ItemLevel } from '@/constants/statuses';
 import { StatusBadge } from './StatusBadge';
 import { ProdbodMember } from '@/hooks/useProdbodMembers';
 import { EffortSizeSelect } from '@/components/feature-detail/EffortSizeSelect';
 import { EffortSize } from '@/types';
 import { useFeatureComments } from '@/hooks/useFeatureComments';
 import { supabase } from '@/integrations/supabase/client';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
+import { InlineAddRow } from './InlineAddRow';
 
 function fmtDateTime(d: string) {
   try {
@@ -48,6 +52,10 @@ export function FeatureDetailPanel({
   const [isPostingComment, setIsPostingComment] = useState(false);
   const [statusDropOpen, setStatusDropOpen] = useState(false);
   const [priorityDropOpen, setPriorityDropOpen] = useState(false);
+  const [descOpen, setDescOpen] = useState(true);
+  const [subtasksOpen, setSubtasksOpen] = useState(true);
+  const [activityOpen, setActivityOpen] = useState(true);
+  const [showAddSubtask, setShowAddSubtask] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const commentEndRef = useRef<HTMLDivElement>(null);
@@ -118,6 +126,21 @@ export function FeatureDetailPanel({
   };
 
   const subItems = allFeatures.filter(f => f.parent_id === feature.id);
+  const doneSubItems = subItems.filter(s => s.status === 'live');
+  const subtaskPct = subItems.length > 0 ? Math.round((doneSubItems.length / subItems.length) * 100) : 0;
+  const addSubtaskLevel: ItemLevel = feature.level === 'feature' ? 'sub_feature' : 'task';
+
+  const toggleSubtaskDone = async (sub: Feature, checked: boolean) => {
+    try {
+      await updateFeature.mutateAsync({ id: sub.id, status: checked ? 'live' : 'in_testing' });
+    } catch {}
+  };
+
+  const sectionLabelStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none',
+    fontSize: 12, color: 'var(--pb-text3)', fontFamily: "'Syne', sans-serif",
+    letterSpacing: '.04em', textTransform: 'uppercase',
+  };
 
   const propRowStyle: React.CSSProperties = {
     display: 'flex',
@@ -388,124 +411,207 @@ export function FeatureDetailPanel({
         </div>
 
         {/* Description */}
-        <div style={{ padding: '12px 18px', borderTop: '1px solid var(--pb-border)', flexShrink: 0 }}>
-          <div style={{ fontSize: 12, color: 'var(--pb-text3)', marginBottom: 6, fontFamily: "'Syne', sans-serif", letterSpacing: '.04em', textTransform: 'uppercase' }}>Description</div>
-          <textarea
-            value={descValue}
-            onChange={(e) => setDescValue(e.target.value)}
-            onBlur={saveDesc}
-            placeholder="Add a description…"
-            rows={4}
-            style={{
-              width: '100%', border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-r)',
-              padding: '10px 12px', fontSize: 13, fontFamily: "'DM Sans', sans-serif",
-              color: 'var(--pb-text)', background: 'var(--pb-bg)', outline: 'none',
-              resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box',
-              transition: 'border-color .1s',
-            }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--pb-border2)')}
-            onBlurCapture={(e) => (e.currentTarget.style.borderColor = 'var(--pb-border)')}
-          />
-        </div>
+        <Collapsible open={descOpen} onOpenChange={setDescOpen}>
+          <div style={{ padding: '12px 18px', borderTop: '1px solid var(--pb-border)', flexShrink: 0 }}>
+            <CollapsibleTrigger asChild>
+              <div style={{ ...sectionLabelStyle, marginBottom: descOpen ? 6 : 0 }}>
+                <ChevronRight size={12} style={{ transition: 'transform .15s', transform: descOpen ? 'rotate(90deg)' : 'rotate(0deg)' }} />
+                Description
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <textarea
+                value={descValue}
+                onChange={(e) => setDescValue(e.target.value)}
+                onBlur={saveDesc}
+                placeholder="Add a description…"
+                rows={4}
+                style={{
+                  width: '100%', border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-r)',
+                  padding: '10px 12px', fontSize: 13, fontFamily: "'DM Sans', sans-serif",
+                  color: 'var(--pb-text)', background: 'var(--pb-bg)', outline: 'none',
+                  resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box',
+                  transition: 'border-color .1s',
+                }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--pb-border2)')}
+                onBlurCapture={(e) => (e.currentTarget.style.borderColor = 'var(--pb-border)')}
+              />
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
+
+        {/* Subtasks (checklist) */}
+        <Collapsible open={subtasksOpen} onOpenChange={setSubtasksOpen}>
+          <div style={{ padding: '12px 18px', borderTop: '1px solid var(--pb-border)', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: subtasksOpen ? 10 : 0 }}>
+              <CollapsibleTrigger asChild>
+                <div style={sectionLabelStyle}>
+                  <ChevronRight size={12} style={{ transition: 'transform .15s', transform: subtasksOpen ? 'rotate(90deg)' : 'rotate(0deg)' }} />
+                  Subtasks {subItems.length > 0 && `(${doneSubItems.length}/${subItems.length})`}
+                </div>
+              </CollapsibleTrigger>
+              <button
+                onClick={() => { setSubtasksOpen(true); setShowAddSubtask(true); }}
+                title="Add subtask"
+                style={{
+                  width: 20, height: 20, borderRadius: 5, border: '1px solid var(--pb-border)',
+                  background: 'transparent', cursor: 'pointer', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', color: 'var(--pb-text3)',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--pb-text)'; e.currentTarget.style.borderColor = 'var(--pb-border2)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--pb-text3)'; e.currentTarget.style.borderColor = 'var(--pb-border)'; }}
+              >
+                <Plus size={12} />
+              </button>
+            </div>
+            <CollapsibleContent>
+              {subItems.length > 0 && (
+                <div style={{ marginBottom: 10 }}>
+                  <Progress value={subtaskPct} className="h-1.5" />
+                </div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {subItems.map(sub => {
+                  const done = sub.status === 'live';
+                  return (
+                    <div
+                      key={sub.id}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px',
+                        borderRadius: 'var(--pb-r)', cursor: 'pointer', fontSize: 13,
+                        color: 'var(--pb-text)', border: '1px solid var(--pb-border)',
+                        background: 'var(--pb-bg)', transition: 'background .1s',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--pb-bg3)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--pb-bg)')}
+                    >
+                      <Checkbox
+                        checked={done}
+                        onCheckedChange={(checked) => toggleSubtaskDone(sub, checked === true)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <span
+                        onClick={() => onOpenDetail(sub)}
+                        style={{
+                          flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          textDecoration: done ? 'line-through' : 'none',
+                          color: done ? 'var(--pb-text3)' : 'var(--pb-text)',
+                        }}
+                      >
+                        {sub.title}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--pb-text3)', textTransform: 'capitalize', flexShrink: 0 }} onClick={() => onOpenDetail(sub)}>
+                        {sub.level.replace('_', ' ')}
+                      </span>
+                    </div>
+                  );
+                })}
+                {showAddSubtask ? (
+                  <InlineAddRow
+                    listId={listId}
+                    productId={productId}
+                    orgId={orgId}
+                    defaultStatusId={feature.status_id ?? ''}
+                    level={addSubtaskLevel}
+                    parentId={feature.id}
+                    position={subItems.length}
+                    onDone={() => setShowAddSubtask(false)}
+                    onCancel={() => setShowAddSubtask(false)}
+                  />
+                ) : (
+                  <button
+                    onClick={() => setShowAddSubtask(true)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px',
+                      border: 'none', background: 'transparent', cursor: 'pointer',
+                      fontSize: 12.5, color: 'var(--pb-text3)', fontFamily: "'DM Sans', sans-serif",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--pb-text)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--pb-text3)')}
+                  >
+                    <Plus size={12} /> Add subtask
+                  </button>
+                )}
+              </div>
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
 
         {/* Activity / Comments */}
-        <div style={{ padding: '12px 18px', borderTop: '1px solid var(--pb-border)', flexShrink: 0 }}>
-          <div style={{ fontSize: 12, color: 'var(--pb-text3)', marginBottom: 10, fontFamily: "'Syne', sans-serif", letterSpacing: '.04em', textTransform: 'uppercase' }}>
-            Activity {comments.length > 0 && `(${comments.length})`}
-          </div>
-
-          {/* Comment list */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 12, maxHeight: 240, overflowY: 'auto' }}>
-            {comments.length === 0 && (
-              <p style={{ fontSize: 12.5, color: 'var(--pb-text3)', textAlign: 'center', padding: '12px 0' }}>No comments yet</p>
-            )}
-            {comments.map(c => (
-              <div key={c.id} style={{ display: 'flex', gap: 8 }}>
-                <div style={{
-                  width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
-                  background: avatarColor(c.author_name),
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 10, fontWeight: 700, color: '#fff', fontFamily: "'Syne', sans-serif",
-                }}>
-                  {c.author_name[0]?.toUpperCase()}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                    <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--pb-text)' }}>{c.author_name}</span>
-                    <span style={{ fontSize: 11, color: 'var(--pb-text3)' }}>
-                      {new Date(c.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                    </span>
-                  </div>
-                  <p style={{ fontSize: 13, color: 'var(--pb-text2)', lineHeight: 1.5, margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                    {c.content}
-                  </p>
-                </div>
+        <Collapsible open={activityOpen} onOpenChange={setActivityOpen}>
+          <div style={{ padding: '12px 18px', borderTop: '1px solid var(--pb-border)', flexShrink: 0 }}>
+            <CollapsibleTrigger asChild>
+              <div style={{ ...sectionLabelStyle, marginBottom: activityOpen ? 10 : 0 }}>
+                <ChevronRight size={12} style={{ transition: 'transform .15s', transform: activityOpen ? 'rotate(90deg)' : 'rotate(0deg)' }} />
+                Activity {comments.length > 0 && `(${comments.length})`}
               </div>
-            ))}
-            <div ref={commentEndRef} />
-          </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              {/* Comment list */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 12, maxHeight: 240, overflowY: 'auto' }}>
+                {comments.length === 0 && (
+                  <p style={{ fontSize: 12.5, color: 'var(--pb-text3)', textAlign: 'center', padding: '12px 0' }}>No comments yet</p>
+                )}
+                {comments.map(c => (
+                  <div key={c.id} style={{ display: 'flex', gap: 8 }}>
+                    <div style={{
+                      width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                      background: avatarColor(c.author_name),
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 10, fontWeight: 700, color: '#fff', fontFamily: "'Syne', sans-serif",
+                    }}>
+                      {c.author_name[0]?.toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                        <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--pb-text)' }}>{c.author_name}</span>
+                        <span style={{ fontSize: 11, color: 'var(--pb-text3)' }}>
+                          {new Date(c.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: 13, color: 'var(--pb-text2)', lineHeight: 1.5, margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                        {c.content}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                <div ref={commentEndRef} />
+              </div>
 
-          {/* Comment input */}
-          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-            <textarea
-              value={commentValue}
-              onChange={e => setCommentValue(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handlePostComment(); }}
-              placeholder="Write a comment… (⌘+Enter to post)"
-              rows={2}
-              style={{
-                flex: 1, border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-r)',
-                padding: '8px 10px', fontSize: 12.5, fontFamily: "'DM Sans', sans-serif",
-                color: 'var(--pb-text)', background: 'var(--pb-bg)', outline: 'none',
-                resize: 'none', lineHeight: 1.5, boxSizing: 'border-box', transition: 'border-color .1s',
-              }}
-              onFocus={e => (e.currentTarget.style.borderColor = 'var(--pb-border2)')}
-              onBlur={e => (e.currentTarget.style.borderColor = 'var(--pb-border)')}
-            />
-            <button
-              onClick={handlePostComment}
-              disabled={!commentValue.trim() || isPostingComment}
-              style={{
-                width: 34, height: 34, borderRadius: 'var(--pb-r)', border: 'none',
-                background: commentValue.trim() ? 'var(--pb-gold)' : 'var(--pb-bg3)',
-                cursor: commentValue.trim() ? 'pointer' : 'not-allowed',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0, transition: 'background .15s',
-              }}
-            >
-              <Send size={14} color={commentValue.trim() ? 'var(--pb-text)' : 'var(--pb-text3)'} />
-            </button>
-          </div>
-        </div>
-
-        {/* Sub-items */}
-        {subItems.length > 0 && (
-          <div style={{ padding: '12px 18px', borderTop: '1px solid var(--pb-border)', flex: 1 }}>
-            <div style={{ fontSize: 12, color: 'var(--pb-text3)', marginBottom: 8, fontFamily: "'Syne', sans-serif", letterSpacing: '.04em', textTransform: 'uppercase' }}>
-              Sub-items ({subItems.length})
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {subItems.map(sub => (
-                <div
-                  key={sub.id}
-                  onClick={() => onOpenDetail(sub)}
+              {/* Comment input */}
+              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                <textarea
+                  value={commentValue}
+                  onChange={e => setCommentValue(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handlePostComment(); }}
+                  placeholder="Write a comment… (⌘+Enter to post)"
+                  rows={2}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px',
-                    borderRadius: 'var(--pb-r)', cursor: 'pointer', fontSize: 13,
-                    color: 'var(--pb-text)', border: '1px solid var(--pb-border)',
-                    background: 'var(--pb-bg)', transition: 'background .1s',
+                    flex: 1, border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-r)',
+                    padding: '8px 10px', fontSize: 12.5, fontFamily: "'DM Sans', sans-serif",
+                    color: 'var(--pb-text)', background: 'var(--pb-bg)', outline: 'none',
+                    resize: 'none', lineHeight: 1.5, boxSizing: 'border-box', transition: 'border-color .1s',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--pb-bg3)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--pb-bg)')}
+                  onFocus={e => (e.currentTarget.style.borderColor = 'var(--pb-border2)')}
+                  onBlur={e => (e.currentTarget.style.borderColor = 'var(--pb-border)')}
+                />
+                <button
+                  onClick={handlePostComment}
+                  disabled={!commentValue.trim() || isPostingComment}
+                  style={{
+                    width: 34, height: 34, borderRadius: 'var(--pb-r)', border: 'none',
+                    background: commentValue.trim() ? 'var(--pb-gold)' : 'var(--pb-bg3)',
+                    cursor: commentValue.trim() ? 'pointer' : 'not-allowed',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0, transition: 'background .15s',
+                  }}
                 >
-                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: STATUSES.find(s => s.key === sub.status)?.dotColor || '#9a9a94', flexShrink: 0 }} />
-                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.title}</span>
-                  <span style={{ fontSize: 11, color: 'var(--pb-text3)', textTransform: 'capitalize', flexShrink: 0 }}>{sub.level.replace('_', ' ')}</span>
-                </div>
-              ))}
-            </div>
+                  <Send size={14} color={commentValue.trim() ? 'var(--pb-text)' : 'var(--pb-text3)'} />
+                </button>
+              </div>
+            </CollapsibleContent>
           </div>
-        )}
+        </Collapsible>
       </div>
     </>
   );
