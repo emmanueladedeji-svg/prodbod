@@ -319,17 +319,24 @@ export function useAcceptInvite() {
         );
       if (profileErr) throw profileErr;
 
-      // Update member record: set active + link user_id
+      // Update member record: set active + link user_id.
+      // If the row is missing (invited before member-row creation was fixed),
+      // upsert creates it so the user appears on the People page.
+      const memberName = `${profileData.first_name} ${profileData.last_name}`.trim();
       const { error: memErr } = await supabase
         .from('organization_members')
-        .update({
-          member_user_id: userId,
-          status: 'Active',
-          last_active: new Date().toISOString(),
-          name: `${profileData.first_name} ${profileData.last_name}`.trim(),
-        })
-        .eq('organization_id', invite.org_id)
-        .eq('email', invite.email);
+        .upsert(
+          {
+            organization_id: invite.org_id,
+            email: invite.email,
+            member_user_id: userId,
+            status: 'Active',
+            last_active: new Date().toISOString(),
+            name: memberName,
+            role: 'Staff',
+          },
+          { onConflict: 'organization_id,email' }
+        );
       if (memErr) throw memErr;
 
       return { orgId: invite.org_id };
