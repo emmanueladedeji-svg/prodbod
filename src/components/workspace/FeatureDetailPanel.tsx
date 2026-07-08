@@ -1,9 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import { X, Send } from 'lucide-react';
 import { Feature, useUpdateWorkspaceFeature } from '@/hooks/useWorkspaceFeatures';
 import { STATUSES, StatusKey, PRIORITY_CONFIG, ItemPriority } from '@/constants/statuses';
 import { StatusBadge } from './StatusBadge';
 import { ProdbodMember } from '@/hooks/useProdbodMembers';
+import { EffortSizeSelect } from '@/components/feature-detail/EffortSizeSelect';
+import { EffortSize } from '@/types';
+import { useFeatureComments } from '@/hooks/useFeatureComments';
+import { supabase } from '@/integrations/supabase/client';
 
 function fmtDateTime(d: string) {
   try {
@@ -36,21 +40,30 @@ export function FeatureDetailPanel({
   feature, allFeatures, listId, productId, orgId, onClose, onOpenDetail, onAssign, members 
 }: FeatureDetailPanelProps) {
   const updateFeature = useUpdateWorkspaceFeature();
+  const { comments, addComment } = useFeatureComments(feature?.id ?? null);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState('');
   const [descValue, setDescValue] = useState('');
+  const [commentValue, setCommentValue] = useState('');
+  const [isPostingComment, setIsPostingComment] = useState(false);
   const [statusDropOpen, setStatusDropOpen] = useState(false);
   const [priorityDropOpen, setPriorityDropOpen] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const commentEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (feature) {
       setTitleValue(feature.title);
       setDescValue(feature.description || '');
+      setCommentValue('');
       setEditingTitle(false);
     }
   }, [feature?.id]);
+
+  useEffect(() => {
+    commentEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [comments.length]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -85,6 +98,23 @@ export function FeatureDetailPanel({
   const setPriority = async (priority: ItemPriority) => {
     setPriorityDropOpen(false);
     try { await updateFeature.mutateAsync({ id: feature.id, priority }); } catch {}
+  };
+
+  const setEffortSize = async (effort_size: EffortSize | null) => {
+    try { await updateFeature.mutateAsync({ id: feature.id, effort_size } as any); } catch {}
+  };
+
+  const handlePostComment = async () => {
+    if (!commentValue.trim() || isPostingComment) return;
+    setIsPostingComment(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const authorName = user?.email?.split('@')[0] ?? 'Member';
+      await addComment({ feature_id: feature.id, author_name: authorName, content: commentValue.trim() });
+      setCommentValue('');
+    } finally {
+      setIsPostingComment(false);
+    }
   };
 
   const subItems = allFeatures.filter(f => f.parent_id === feature.id);
@@ -324,6 +354,15 @@ export function FeatureDetailPanel({
             </div>
           </div>
 
+          {/* Effort size */}
+          <div style={propRowStyle}>
+            <span style={propLabelStyle}>Effort</span>
+            <EffortSizeSelect
+              value={(feature as any).effort_size as EffortSize | null}
+              onChange={setEffortSize}
+            />
+          </div>
+
           {/* Due date */}
           <div style={propRowStyle}>
             <span style={propLabelStyle}>Due Date</span>
@@ -367,6 +406,76 @@ export function FeatureDetailPanel({
             onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--pb-border2)')}
             onBlurCapture={(e) => (e.currentTarget.style.borderColor = 'var(--pb-border)')}
           />
+        </div>
+
+        {/* Activity / Comments */}
+        <div style={{ padding: '12px 18px', borderTop: '1px solid var(--pb-border)', flexShrink: 0 }}>
+          <div style={{ fontSize: 12, color: 'var(--pb-text3)', marginBottom: 10, fontFamily: "'Syne', sans-serif", letterSpacing: '.04em', textTransform: 'uppercase' }}>
+            Activity {comments.length > 0 && `(${comments.length})`}
+          </div>
+
+          {/* Comment list */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 12, maxHeight: 240, overflowY: 'auto' }}>
+            {comments.length === 0 && (
+              <p style={{ fontSize: 12.5, color: 'var(--pb-text3)', textAlign: 'center', padding: '12px 0' }}>No comments yet</p>
+            )}
+            {comments.map(c => (
+              <div key={c.id} style={{ display: 'flex', gap: 8 }}>
+                <div style={{
+                  width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                  background: avatarColor(c.author_name),
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 10, fontWeight: 700, color: '#fff', fontFamily: "'Syne', sans-serif",
+                }}>
+                  {c.author_name[0]?.toUpperCase()}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--pb-text)' }}>{c.author_name}</span>
+                    <span style={{ fontSize: 11, color: 'var(--pb-text3)' }}>
+                      {new Date(c.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 13, color: 'var(--pb-text2)', lineHeight: 1.5, margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    {c.content}
+                  </p>
+                </div>
+              </div>
+            ))}
+            <div ref={commentEndRef} />
+          </div>
+
+          {/* Comment input */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+            <textarea
+              value={commentValue}
+              onChange={e => setCommentValue(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handlePostComment(); }}
+              placeholder="Write a comment… (⌘+Enter to post)"
+              rows={2}
+              style={{
+                flex: 1, border: '1px solid var(--pb-border)', borderRadius: 'var(--pb-r)',
+                padding: '8px 10px', fontSize: 12.5, fontFamily: "'DM Sans', sans-serif",
+                color: 'var(--pb-text)', background: 'var(--pb-bg)', outline: 'none',
+                resize: 'none', lineHeight: 1.5, boxSizing: 'border-box', transition: 'border-color .1s',
+              }}
+              onFocus={e => (e.currentTarget.style.borderColor = 'var(--pb-border2)')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'var(--pb-border)')}
+            />
+            <button
+              onClick={handlePostComment}
+              disabled={!commentValue.trim() || isPostingComment}
+              style={{
+                width: 34, height: 34, borderRadius: 'var(--pb-r)', border: 'none',
+                background: commentValue.trim() ? 'var(--pb-gold)' : 'var(--pb-bg3)',
+                cursor: commentValue.trim() ? 'pointer' : 'not-allowed',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0, transition: 'background .15s',
+              }}
+            >
+              <Send size={14} color={commentValue.trim() ? 'var(--pb-text)' : 'var(--pb-text3)'} />
+            </button>
+          </div>
         </div>
 
         {/* Sub-items */}
