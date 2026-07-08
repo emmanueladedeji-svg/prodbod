@@ -24,22 +24,31 @@ import { FeatureData, useFeatures } from '@/hooks/useFeatures';
 import { useTasks, TaskData } from '@/hooks/useTasks';
 import { useReleases } from '@/hooks/useReleases';
 import { useSprints } from '@/hooks/useSprints';
-import { useFeatureComments } from '@/hooks/useFeatureComments';
 import { useProductObjectives } from '@/hooks/useProductObjectives';
+import { useFeatureActivity } from '@/hooks/useFeatureActivity';
+import { useFeatureAssignees } from '@/hooks/useFeatureAssignees';
+import { useFeatureFieldUpdate } from '@/hooks/useFeatureFieldUpdate';
+import { usePostComment } from '@/hooks/usePostComment';
+import { useOrgMembers } from '@/hooks/useOrgMembers';
+import { MultiAssigneePicker } from '@/components/feature-detail/MultiAssigneePicker';
+import { EffortSizeSelect } from '@/components/feature-detail/EffortSizeSelect';
+import { EffortSize } from '@/types';
 import { cn } from '@/lib/utils';
 
 /* ── Status & Priority configs ── */
 const STATUS_OPTIONS = [
-  { value: 'backlog', label: 'Backlog', color: 'bg-muted-foreground' },
-  { value: 'in_progress', label: 'IN PROGRESS', color: 'bg-info' },
-  { value: 'in_review', label: 'IN REVIEW', color: 'bg-warning' },
-  { value: 'done', label: 'DONE', color: 'bg-success' },
+  { value: 'backlog',     label: 'Backlog',    color: 'bg-pink-500'    },
+  { value: 'in_progress', label: 'Discovery',  color: 'bg-blue-500'    },
+  { value: 'in_review',   label: 'Dev',        color: 'bg-amber-500'   },
+  { value: 'done',        label: 'Testing',    color: 'bg-purple-500'  },
+  { value: 'live',        label: 'Live',       color: 'bg-emerald-500' },
 ];
 const STATUS_BADGE: Record<string, string> = {
-  backlog: 'bg-muted text-muted-foreground',
-  in_progress: 'bg-info/15 text-info border-info/30',
-  in_review: 'bg-warning/15 text-warning border-warning/30',
-  done: 'bg-success/15 text-success border-success/30',
+  backlog:     'bg-pink-500/10 text-pink-700 border-pink-300 dark:text-pink-400',
+  in_progress: 'bg-blue-500/10 text-blue-700 border-blue-300 dark:text-blue-400',
+  in_review:   'bg-amber-500/10 text-amber-700 border-amber-300 dark:text-amber-400',
+  done:        'bg-purple-500/10 text-purple-700 border-purple-300 dark:text-purple-400',
+  live:        'bg-emerald-500/10 text-emerald-700 border-emerald-300 dark:text-emerald-400',
 };
 const PRIORITY_OPTIONS = [
   { value: 'critical', label: 'Urgent', icon: '🔴' },
@@ -82,8 +91,17 @@ export function FeatureDetailModal({ feature, open, onOpenChange }: FeatureDetai
   const { tasks, createTask, updateTask } = useTasks(feature?.id);
   const { releases } = useReleases();
   const { sprints } = useSprints();
-  const { comments, addComment } = useFeatureComments(feature?.id || null);
   const { objectives } = useProductObjectives();
+
+  // New hooks wired to feature_activity and feature_assignees tables
+  const { data: activities = [], isLoading: activityLoading } = useFeatureActivity(open ? (feature?.id ?? null) : null);
+  const { assignees, addAssignee, removeAssignee, isUpdating: assigneesUpdating } = useFeatureAssignees(open ? (feature?.id ?? null) : null);
+  const { updateField } = useFeatureFieldUpdate();
+  const { data: orgMembers = [] } = useOrgMembers();
+  const { postComment, isPosting } = usePostComment(
+    open ? (feature?.id ?? null) : null,
+    orgMembers.map((m) => ({ userId: m.userId, displayName: m.displayName }))
+  );
 
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [newTaskName, setNewTaskName] = useState('');
@@ -103,7 +121,7 @@ export function FeatureDetailModal({ feature, open, onOpenChange }: FeatureDetai
 
   useEffect(() => {
     commentEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [comments.length]);
+  }, [activities.length]);
 
   if (!feature) return null;
 
@@ -115,6 +133,12 @@ export function FeatureDetailModal({ feature, open, onOpenChange }: FeatureDetai
     updateFeature({ id: feature.id, ...values });
   };
 
+  const handleFieldUpdate = (fieldName: string, oldValue: unknown, newValue: unknown) => {
+    updateField({ featureId: feature.id, fieldName, oldValue, newValue });
+    // Also optimistically update the local features list
+    handleUpdate({ [fieldName]: newValue } as any);
+  };
+
   const handleAddTask = async () => {
     if (!newTaskName.trim()) return;
     await createTask({ feature_id: feature.id, name: newTaskName });
@@ -123,7 +147,7 @@ export function FeatureDetailModal({ feature, open, onOpenChange }: FeatureDetai
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
-    await addComment({ feature_id: feature.id, author_name: 'You', content: newComment });
+    await postComment(newComment);
     setNewComment('');
   };
 
@@ -204,10 +228,13 @@ export function FeatureDetailModal({ feature, open, onOpenChange }: FeatureDetai
                 {/* ═══ SECTION: Metadata Fields ═══ */}
                 <div className="space-y-0">
                   <MetaRow icon={Circle} label="Status">
-                    <Select value={feature.status} onValueChange={v => handleUpdate({ status: v })}>
+                    <Select
+                      value={feature.status}
+                      onValueChange={v => handleFieldUpdate('status', feature.status, v)}
+                    >
                       <SelectTrigger className="h-7 text-xs border-none bg-transparent px-0 w-auto gap-1.5 focus:ring-0">
-                        <Badge className={cn('text-[11px] font-semibold uppercase tracking-wide px-2.5 py-0.5', STATUS_BADGE[feature.status])}>
-                          {statusCfg?.label}
+                        <Badge className={cn('text-[11px] font-semibold tracking-wide px-2.5 py-0.5', STATUS_BADGE[feature.status] ?? STATUS_BADGE['backlog'])}>
+                          {statusCfg?.label ?? feature.status}
                         </Badge>
                       </SelectTrigger>
                       <SelectContent>
@@ -224,29 +251,13 @@ export function FeatureDetailModal({ feature, open, onOpenChange }: FeatureDetai
                   </MetaRow>
 
                   <MetaRow icon={Users} label="Assignees">
-                    <div className="flex items-center gap-2">
-                      {feature.assignee_name ? (
-                        <div className="flex items-center gap-1.5">
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-medium">
-                              {feature.assignee_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <Input
-                            defaultValue={feature.assignee_name}
-                            onBlur={e => handleUpdate({ assignee_name: e.target.value } as any)}
-                            className="h-7 text-sm border-none bg-transparent px-0 focus-visible:ring-0 w-[140px]"
-                          />
-                        </div>
-                      ) : (
-                        <Input
-                          defaultValue=""
-                          onBlur={e => e.target.value && handleUpdate({ assignee_name: e.target.value } as any)}
-                          placeholder="Add assignee..."
-                          className="h-7 text-sm border-none bg-transparent px-0 focus-visible:ring-0 w-[140px] text-muted-foreground"
-                        />
-                      )}
-                    </div>
+                    <MultiAssigneePicker
+                      assignees={assignees}
+                      orgMembers={orgMembers}
+                      onAdd={addAssignee}
+                      onRemove={removeAssignee}
+                      isUpdating={assigneesUpdating}
+                    />
                   </MetaRow>
 
                   <MetaRow icon={Calendar} label="Dates">
@@ -268,7 +279,7 @@ export function FeatureDetailModal({ feature, open, onOpenChange }: FeatureDetai
                   </MetaRow>
 
                   <MetaRow icon={Flag} label="Priority">
-                    <Select value={feature.priority} onValueChange={v => handleUpdate({ priority: v })}>
+                    <Select value={feature.priority} onValueChange={v => handleFieldUpdate('priority', feature.priority, v)}>
                       <SelectTrigger className="h-7 text-sm border-none bg-transparent px-0 w-auto gap-1 focus:ring-0">
                         <SelectValue />
                       </SelectTrigger>
@@ -280,6 +291,13 @@ export function FeatureDetailModal({ feature, open, onOpenChange }: FeatureDetai
                         ))}
                       </SelectContent>
                     </Select>
+                  </MetaRow>
+
+                  <MetaRow icon={Zap} label="Effort">
+                    <EffortSizeSelect
+                      value={(feature as any).effort_size as EffortSize | null}
+                      onChange={v => handleFieldUpdate('effort_size', (feature as any).effort_size, v)}
+                    />
                   </MetaRow>
 
                   <MetaRow icon={Clock} label="Time estimate" isEmpty={hideEmpty && !hasValue(feature.time_estimate)}>
@@ -486,9 +504,9 @@ export function FeatureDetailModal({ feature, open, onOpenChange }: FeatureDetai
                   </Button>
                   <Button variant="ghost" size="icon" className="h-7 w-7 relative">
                     <Bell className="h-3.5 w-3.5" />
-                    {comments.length > 0 && (
+                    {activities.filter(a => a.type === 'comment').length > 0 && (
                       <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-primary text-[9px] text-primary-foreground flex items-center justify-center font-bold">
-                        {comments.length}
+                        {activities.filter(a => a.type === 'comment').length}
                       </span>
                     )}
                   </Button>
@@ -500,43 +518,75 @@ export function FeatureDetailModal({ feature, open, onOpenChange }: FeatureDetai
 
               {/* Activity feed */}
               <ScrollArea className="flex-1">
-                <div className="p-4 space-y-5">
-                  {comments.length === 0 && (
+                <div className="p-4 space-y-4">
+                  {activityLoading && (
+                    <div className="text-center py-8">
+                      <p className="text-xs text-muted-foreground">Loading activity…</p>
+                    </div>
+                  )}
+                  {!activityLoading && activities.length === 0 && (
                     <div className="text-center py-12">
                       <MessageSquare className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
                       <p className="text-xs text-muted-foreground">No activity yet</p>
                     </div>
                   )}
-                  {comments.map(c => (
-                    <div key={c.id} className="group/comment">
-                      <div className="flex gap-2.5">
-                        <Avatar className="h-7 w-7 shrink-0 mt-0.5">
-                          <AvatarFallback className="text-[10px] bg-accent/10 text-accent font-medium">
-                            {c.author_name[0]?.toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">{c.author_name}</span>
-                            <span className="text-[11px] text-muted-foreground">
-                              {new Date(c.created_at).toLocaleDateString(undefined, {
-                                month: 'short', day: 'numeric', year: 'numeric',
-                              })}
-                            </span>
-                          </div>
-                          <p className="text-sm text-foreground/80 mt-1 leading-relaxed whitespace-pre-wrap">{c.content}</p>
-                          {/* Comment actions */}
-                          <div className="flex items-center gap-1 mt-1.5 opacity-0 group-hover/comment:opacity-100 transition-opacity">
-                            <button className="p-1 rounded hover:bg-muted"><ThumbsUp className="h-3 w-3 text-muted-foreground" /></button>
-                            <button className="p-1 rounded hover:bg-muted"><SmilePlus className="h-3 w-3 text-muted-foreground" /></button>
-                            <button className="p-1 rounded hover:bg-muted text-xs text-muted-foreground flex items-center gap-0.5">
-                              <Reply className="h-3 w-3" /> Reply
-                            </button>
+                  {activities.map(a => {
+                    const ts = new Date(a.createdAt).toLocaleDateString(undefined, {
+                      month: 'short', day: 'numeric',
+                    });
+
+                    // System change records
+                    if (a.type !== 'comment') {
+                      const label =
+                        a.type === 'created' ? 'created this feature' :
+                        a.type === 'status_change' ? `changed status${a.oldValue ? ` from ${a.oldValue}` : ''} to ${a.newValue ?? ''}` :
+                        a.type === 'assignee_change' ? (a.oldValue ? 'removed an assignee' : 'added an assignee') :
+                        a.type === 'field_change' ? `updated ${a.fieldName?.replace(/_/g, ' ')}` :
+                        a.type.replace(/_/g, ' ');
+
+                      return (
+                        <div key={a.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Avatar className="h-5 w-5 shrink-0">
+                            <AvatarFallback className="text-[9px] font-semibold bg-muted">
+                              {a.userInitials}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>
+                            <span className="font-medium text-foreground/80">{a.userDisplayName}</span>
+                            {' '}{label}
+                          </span>
+                          <span className="ml-auto shrink-0 text-muted-foreground/60">{ts}</span>
+                        </div>
+                      );
+                    }
+
+                    // Comments
+                    return (
+                      <div key={a.id} className="group/comment">
+                        <div className="flex gap-2.5">
+                          <Avatar className="h-7 w-7 shrink-0 mt-0.5">
+                            <AvatarFallback className="text-[10px] bg-accent/10 text-accent font-medium">
+                              {a.userInitials}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium">{a.userDisplayName}</span>
+                              <span className="text-[11px] text-muted-foreground">{ts}</span>
+                            </div>
+                            <p className="text-sm text-foreground/80 mt-1 leading-relaxed whitespace-pre-wrap">{a.body}</p>
+                            <div className="flex items-center gap-1 mt-1.5 opacity-0 group-hover/comment:opacity-100 transition-opacity">
+                              <button className="p-1 rounded hover:bg-muted"><ThumbsUp className="h-3 w-3 text-muted-foreground" /></button>
+                              <button className="p-1 rounded hover:bg-muted"><SmilePlus className="h-3 w-3 text-muted-foreground" /></button>
+                              <button className="p-1 rounded hover:bg-muted text-xs text-muted-foreground flex items-center gap-0.5">
+                                <Reply className="h-3 w-3" /> Reply
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   <div ref={commentEndRef} />
                 </div>
               </ScrollArea>
@@ -564,7 +614,7 @@ export function FeatureDetailModal({ feature, open, onOpenChange }: FeatureDetai
                     size="icon"
                     className="h-8 w-8 shrink-0 bg-primary hover:bg-primary/90"
                     onClick={handleAddComment}
-                    disabled={!newComment.trim()}
+                    disabled={!newComment.trim() || isPosting}
                   >
                     <Send className="h-3.5 w-3.5" />
                   </Button>
