@@ -22,6 +22,21 @@ export interface Feature {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  progress?: number;
+  is_blocked?: boolean;
+  blocked_reason?: string | null;
+  in_progress_since?: string | null;
+  phase_entered_at?: string | null;
+  sprint_id?: string | null;
+  start_date?: string | null;
+  story_points?: number;
+  time_estimate?: number;
+  product_line_id?: string | null;
+  product_statuses?: {
+    name: string;
+    color: string;
+    category: string;
+  } | null;
 }
 
 export function useWorkspaceFeatures(listId: string | null) {

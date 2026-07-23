@@ -44,11 +44,12 @@ interface FeatureRowProps {
   onStatusChange: (featureId: string, newStatusId: string) => void;
   isArriving?: boolean;
   progressEnabled?: boolean;
+  sprints?: any[];
 }
 
 export function FeatureRow({
   feature, childFeatures, allFeatures, nestLevel, listId, productId, orgId,
-  onOpenDetail, onAssign, members, productStatuses, onStatusChange, isArriving, progressEnabled,
+  onOpenDetail, onAssign, members, productStatuses, onStatusChange, isArriving, progressEnabled, sprints,
 }: FeatureRowProps) {
   const [expanded, setExpanded] = useState(true);
   const [hovered, setHovered] = useState(false);
@@ -325,6 +326,24 @@ export function FeatureRow({
             <span style={{ fontSize: 12, color: 'var(--pb-text3)' }}>—</span>
           )}
         </div>
+
+        {/* Sprint (100px) */}
+        <div style={{ width: 100, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+          {feature.sprint_id && sprints ? (
+            <span style={{ fontSize: 11, background: 'var(--pb-gold-bg)', color: 'var(--pb-gold-600)', border: '1px solid var(--pb-gold-200)', borderRadius: 4, padding: '2px 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 90 }}>
+              {sprints.find((s: any) => s.id === feature.sprint_id)?.name || 'Sprint'}
+            </span>
+          ) : (
+            <span style={{ fontSize: 11, background: '#f5f5f5', color: '#a3a3a3', border: '1px dashed #d4d4d4', borderRadius: 4, padding: '2px 6px' }}>
+              No Sprint
+            </span>
+          )}
+        </div>
+
+        {/* Sprint Points (60px) */}
+        <div style={{ width: 60, flexShrink: 0, fontSize: 12, color: 'var(--pb-text2)', textAlign: 'right' }}>
+          {(feature as any).story_points ? `${(feature as any).story_points} pts` : '—'}
+        </div>
       </div>
 
       {/* Inline add child row */}
@@ -360,6 +379,7 @@ export function FeatureRow({
           productStatuses={productStatuses}
           onStatusChange={onStatusChange}
           progressEnabled={progressEnabled}
+          sprints={sprints}
         />
       ))}
     </>

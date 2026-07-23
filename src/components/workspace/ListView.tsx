@@ -18,10 +18,11 @@ interface ListViewProps {
   members: ProdbodMember[];
   productStatuses: ProductStatus[];
   progressEnabled?: boolean;
+  sprints?: any[];
 }
 
 export function ListView({
-  features, listId, productId, orgId, onOpenDetail, onAssign, members, productStatuses, progressEnabled,
+  features, listId, productId, orgId, onOpenDetail, onAssign, members, productStatuses, progressEnabled, sprints,
 }: ListViewProps) {
   const updateFeature = useUpdateWorkspaceFeature();
 
@@ -142,11 +143,12 @@ export function ListView({
             onAssign={onAssign}
             members={members}
             productStatuses={productStatuses}
-            onStatusChange={handleStatusChange}
             arrivingFeatureId={arrivingFeatureId}
             progressEnabled={progressEnabled}
             isDropTarget={overStatusId === s.id && activeDragId !== null}
             dropTargetColor={s.color}
+            sprints={sprints}
+            onStatusChange={handleStatusChange}
           />
         ))}
 

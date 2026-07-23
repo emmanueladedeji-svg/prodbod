@@ -23,11 +23,12 @@ interface StatusGroupProps {
   progressEnabled?: boolean;
   isDropTarget?: boolean;
   dropTargetColor?: string;
+  sprints?: any[];
 }
 
 export function StatusGroup({
   status, features, allFeatures, listId, productId, orgId, onOpenDetail, onAssign, members,
-  productStatuses, onStatusChange, arrivingFeatureId, progressEnabled, isDropTarget, dropTargetColor,
+  productStatuses, onStatusChange, arrivingFeatureId, progressEnabled, isDropTarget, dropTargetColor, sprints,
 }: StatusGroupProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -127,6 +128,8 @@ export function StatusGroup({
             <div style={{ width: 90, flexShrink: 0, fontSize: 11, color: 'var(--pb-text3)', fontFamily: "'Syne', sans-serif", letterSpacing: '.06em', textTransform: 'uppercase' }}>Assignee</div>
             <div style={{ width: 100, flexShrink: 0, fontSize: 11, color: 'var(--pb-text3)', fontFamily: "'Syne', sans-serif", letterSpacing: '.06em', textTransform: 'uppercase' }}>Due Date</div>
             <div style={{ width: 80, flexShrink: 0, fontSize: 11, color: 'var(--pb-text3)', fontFamily: "'Syne', sans-serif", letterSpacing: '.06em', textTransform: 'uppercase' }}>Priority</div>
+            <div style={{ width: 100, flexShrink: 0, fontSize: 11, color: 'var(--pb-text3)', fontFamily: "'Syne', sans-serif", letterSpacing: '.06em', textTransform: 'uppercase' }}>Sprint</div>
+            <div style={{ width: 60, flexShrink: 0, fontSize: 11, color: 'var(--pb-text3)', fontFamily: "'Syne', sans-serif", letterSpacing: '.06em', textTransform: 'uppercase', textAlign: 'right' }}>Points</div>
           </div>
 
           {/* Feature rows — wrapped in SortableContext for list-view DnD */}
@@ -148,6 +151,7 @@ export function StatusGroup({
               onStatusChange={onStatusChange}
               isArriving={feature.id === arrivingFeatureId}
               progressEnabled={progressEnabled}
+              sprints={sprints}
             />
           ))}
           </SortableContext>
