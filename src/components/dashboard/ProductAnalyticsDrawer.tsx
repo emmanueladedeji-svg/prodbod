@@ -47,6 +47,7 @@ function ChartTooltip({ active, payload }: any) {
 function DrawerRolePill({
   roleLabel,
   person,
+  canManage,
   onClick,
 }: {
   roleLabel: string;
@@ -87,8 +88,12 @@ function DrawerRolePill({
       fontFamily: "'DM Sans', sans-serif",
       opacity: canManage ? 1 : 0.6,
     }}
-      onMouseEnter={e => canManage && (e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-gold)'}
-      onMouseLeave={e => canManage && (e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-border)'}
+      onMouseEnter={e => {
+        if (canManage) (e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-gold)';
+      }}
+      onMouseLeave={e => {
+        if (canManage) (e.currentTarget as HTMLElement).style.borderColor = 'var(--pb-border)';
+      }}
     >
       <div style={{
         width: 22, height: 22, borderRadius: '50%',
@@ -118,7 +123,16 @@ export function ProductAnalyticsDrawer({
   const [referenceDate, setReferenceDate] = useState<Date>(new Date());
 
   const { pm, leadEngineer } = useProductRoles(productId);
-  const { counts: statusCounts, total: totalFeatures } = useFeatureStatusCounts(productId);
+  const { data: countsData } = useFeatureStatusCounts(productId);
+  const statusCounts = countsData?.counts || {
+    idea: 0,
+    discovery: 0,
+    in_development: 0,
+    in_testing: 0,
+    live: 0,
+    closed: 0,
+  };
+  const totalFeatures = countsData?.total || 0;
   const { data: historyData = [] } = useFeatureStatusHistory(productId, period, referenceDate);
   const { data: features = [], isLoading: featuresLoading } = useProductFeatures(productId, statusFilter);
 

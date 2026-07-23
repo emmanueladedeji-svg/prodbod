@@ -23,6 +23,7 @@ interface ProductCardProps {
 function RoleBadge({
   abbrev,
   person,
+  canManage,
   onClick,
 }: {
   abbrev: string;
