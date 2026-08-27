@@ -16,6 +16,7 @@ export interface Feature {
   status_id: string | null;
   priority: ItemPriority;
   assignee_id: string | null;
+  effort_size: 'XS' | 'S' | 'M' | 'L' | 'XL' | null;
   due_date: string | null;
   position: number;
   is_collapsed: boolean;
