@@ -132,12 +132,22 @@ export default function Onboarding() {
     setAlert('');
     setIsLoading(true);
     try {
-      const org = await createOrg.mutateAsync({ name: orgName.trim(), description: orgDesc.trim() || undefined, industry: industry || undefined, established_date: orgDate || undefined });
-      const oid = org.id;
-      setCreatedOrgId(oid);
+      // Guard against creating a duplicate organization: if this user already
+      // belongs to one (e.g. they were bounced back here by a transient
+      // loading error rather than genuinely being a new user), reuse it
+      // instead of creating another.
+      let oid: string;
+      if (myOrgs.length > 0) {
+        oid = myOrgs[0].id;
+        setCreatedOrgId(oid);
+      } else {
+        const org = await createOrg.mutateAsync({ name: orgName.trim(), description: orgDesc.trim() || undefined, industry: industry || undefined, established_date: orgDate || undefined });
+        oid = org.id;
+        setCreatedOrgId(oid);
 
-      for (const p of products) {
-        await addProduct.mutateAsync({ orgId: oid, name: p.name, description: p.desc || undefined });
+        for (const p of products) {
+          await addProduct.mutateAsync({ orgId: oid, name: p.name, description: p.desc || undefined });
+        }
       }
 
       await upsertProfile.mutateAsync({ onboarding_completed: true });

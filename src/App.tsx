@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useMyOrgs } from "@/hooks/useProdbodOrgs";
 import { useInactivityTimeout } from "@/hooks/useInactivityTimeout";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
 
 import Auth from "./pages/Auth";
 import AcceptInvite from "./pages/AcceptInvite";
@@ -41,8 +41,20 @@ const queryClient = new QueryClient({
 });
 
 function OnboardingGuard({ children }: { children: React.ReactNode }) {
-  const { data: profile, isLoading: profileLoading } = useUserProfile();
-  const { data: orgs = [], isLoading: orgsLoading } = useMyOrgs();
+  const {
+    data: profile,
+    isLoading: profileLoading,
+    isError: profileError,
+    error: profileErrorObj,
+    refetch: refetchProfile,
+  } = useUserProfile();
+  const {
+    data: orgs = [],
+    isLoading: orgsLoading,
+    isError: orgsError,
+    error: orgsErrorObj,
+    refetch: refetchOrgs,
+  } = useMyOrgs();
 
   if (profileLoading || orgsLoading) {
     return (
@@ -52,6 +64,32 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // A failed fetch (network blip, cold-started backend, expired session refresh)
+  // must NEVER be treated as "no profile / no orgs" — that misread is what sends
+  // an already-onboarded user back into the onboarding wizard and, from there,
+  // risks creating a duplicate organization. Surface a retry screen instead.
+  if (profileError || orgsError) {
+    console.error('OnboardingGuard: failed to load profile/orgs', profileErrorObj || orgsErrorObj);
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--pb-bg)' }}>
+        <div className="flex flex-col items-center gap-4 text-center max-w-sm px-6">
+          <AlertTriangle className="h-8 w-8" style={{ color: 'var(--pb-gold)' }} />
+          <p style={{ color: 'var(--pb-text)' }}>
+            Couldn't load your workspace. This is usually a temporary connection issue.
+          </p>
+          <button
+            onClick={() => { refetchProfile(); refetchOrgs(); }}
+            className="px-4 py-2 rounded-md font-medium"
+            style={{ background: 'var(--pb-gold)', color: 'var(--pb-text)' }}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Only reached once both queries have SUCCEEDED — this is genuinely new-user state.
   // Send to onboarding if: no profile, onboarding not completed, or no orgs yet
   if (!profile || !profile.onboarding_completed || orgs.length === 0) {
     if (window.location.pathname === '/onboarding') return <>{children}</>;
